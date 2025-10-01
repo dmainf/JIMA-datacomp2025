@@ -1,31 +1,41 @@
 import pandas as pd
 
-df_raw = pd.read_csv('data/data.txt', sep='\t')
+from lib.prepro import clean_df
+
+df = pd.read_csv('data/data.txt', sep='\t')
+
+df = clean_df(df)
 
 # データの基本情報
 print("=== データの形状 ===")
-print(df_raw.shape)
+print(df.shape)
 
 print("\n=== カラム名 ===")
-print(df_raw.columns.tolist())
-
-print("\n=== 最初の5行 ===")
-print(df_raw.head())
+print(df.columns.tolist())
 
 print("\n=== 欠損値の数 ===")
-print(df_raw.isnull().sum())
+print(df.isnull().sum())
 
 print("\n=== 欠損値の割合 (%) ===")
-print((df_raw.isnull().sum() / len(df_raw) * 100).round(2))
+print((df.isnull().sum() / len(df) * 100).round(2))
+
+
+
+print("\n=== Label Count Encoding結果 ===" )
+print(f"書名のエンコード範囲: {df['書名_encoded'].min()} ~ {df['書名_encoded'].max()}")
+print(f"著者名のエンコード範囲: {df['著者名_encoded'].min()} ~ {df['著者名_encoded'].max()}")
+print(f"\n書名の平均出現回数: {df['書名_encoded'].mean():.2f}")
+print(f"著者名の平均出現回数: {df['著者名_encoded'].mean():.2f}")
+
+
+
+
+print("\n=== 最初の5行 ===")
+print(df.head())
 
 print("\n=== データ型 ===")
-print(df_raw.dtypes)
+print(df.dtypes)
 
-print("\n=== 基本統計量 ===")
-print(df_raw.describe())
-
-print("\n=== 数値列の統計量 ===")
-print(df_raw.describe(include='number'))
-
-print("\n=== カテゴリ列の統計量 ===")
-print(df_raw.describe(include='object'))
+print("\n=== カラム削除後 ===")
+print(f"データの形状: {df.shape}")
+print(f"カラム名: {df.columns.tolist()}")
