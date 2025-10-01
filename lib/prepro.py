@@ -10,6 +10,7 @@ def clean_df(df):
     author_counts = df['著者名'].value_counts().to_dict()
     df['著者名'] = df['著者名'].map(author_counts).fillna(0).astype(int)
     df['本体価格'] = df['本体価格'].fillna(0)
+    ##label_encoding
 
     drop_columns=[
         '日付',
