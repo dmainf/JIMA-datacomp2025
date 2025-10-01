@@ -10,10 +10,12 @@ def clean_df(df):
     author_counts = df['著者名'].value_counts().to_dict()
     df['著者名'] = df['著者名'].map(author_counts).fillna(0).astype(int)
     df['本体価格'] = df['本体価格'].fillna(0)
-    ##label_encoding
+    store_dummies = pd.get_dummies(df['書店コード'], prefix='store').astype(int)
+    df = pd.concat([df, store_dummies], axis=1)
 
     drop_columns=[
         '日付',
+        '書店コード'
     ]
     for column in drop_columns:
         df = df.drop(columns=[column])
