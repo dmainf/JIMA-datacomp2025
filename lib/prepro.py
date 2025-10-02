@@ -3,6 +3,8 @@ import pandas as pd
 def clean_df(df):
     # 著者名・出版社・書名・本体価格が全て欠損している行を削除
     df = df.dropna(subset=['著者名', '出版社', '書名', '本体価格'], how='all')
+    # 17件の出版社欠損値を補完
+    df.loc[df['ISBN'].astype(str).str.startswith("978-4-939094"), '出版社'] = "福島テレビ（株）"
     #
     df['日付'] = pd.to_datetime(df['日付'])
     df['年'] = df['日付'].dt.year
