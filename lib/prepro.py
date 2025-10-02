@@ -22,7 +22,7 @@ def clean_df(df):
     store_dummies = pd.get_dummies(df['書店コード'], prefix='書店').astype(int)
     df = pd.concat([df, store_dummies], axis=1)
     # ワンホットエンコーディングを実行
-    df = pd.get_dummies(df, columns=['大分類'])
+    df = pd.get_dummies(df, columns=['大分類'], dtype=int)
     # 各カテゴリの出現回数を計算
     count_map_1 = df['中分類'].value_counts()
     count_map_2 = df['小分類'].value_counts()
