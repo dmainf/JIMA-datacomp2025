@@ -1,8 +1,81 @@
 import pandas as pd
 
+def delete_space(df, column):
+    """指定されたカラムの空白を削除"""
+    df[column] = df[column].apply(lambda x: x.replace(' ', '').replace('　', '').strip() if pd.notna(x) else x)
+    return df
+
+def normalize_author(df, column):
+    """著者名の正規化: 役割表記を削除"""
+    def _normalize(name):
+        if pd.isna(name):
+            return name
+
+        original = name
+
+        complex_patterns = [
+            'さく・え', 'さく／え', '作・絵', '作／絵', '作絵',
+            '著・画', '著・監修', '著・訳', '著・作詞', '著・作曲',
+            '著・絵', '著／イラスト', '著＋訳', '著作',
+            '企画・監修', '企画監修', '編・著', '編著'
+        ]
+        for pattern in complex_patterns:
+            if pattern in name:
+                name = name.replace(pattern, '')
+
+        single_patterns = [
+            '監修', '原作', '漫画', 'イラスト',
+            '著', '画', '作', '編', '訳', '文', '絵',
+            'さく', 'マンガ', 'え', '〔著〕'
+        ]
+        for pattern in single_patterns:
+            if name.endswith(pattern):
+                name = name[:-len(pattern)]
+                break  # 一度だけ削除
+
+        name = name.replace('他著', '').replace('他', '')
+
+        return name.strip() if name.strip() else original
+
+    df[column] = df[column].apply(_normalize)
+    return df
+
+def normalize_title(df, column):
+    import re
+
+    def _normalize(title):
+        if pd.isna(title):
+            return title
+
+        original = title
+
+        for delimiter in ['～', '〜', '：', ':']:
+            if delimiter in title:
+                title = title.split(delimiter)[0]
+
+        if '（' in title and '）' in title:
+            matches = re.findall(r'（[^）]+）', title)
+            for match in matches:
+                if not any(keyword in match for keyword in ['関東', '首都圏', '東版', '西版', '北版', '南版', '版', '地域']):
+                    title = title.replace(match, '')
+
+        title = re.sub(r'[０-９]+$', '', title)
+        title = re.sub(r'[0-9]+$', '', title)
+        if title.endswith('上') or title.endswith('下') or title.endswith('中'):
+            if len(title) > 1:
+                title = title[:-1]
+
+        title = re.sub(r'第[一二三四五六七八九十百千]+巻?$', '', title)
+
+        return title.strip() if title.strip() else original
+
+    df[column] = df[column].apply(_normalize)
+    return df
+
 def clean_df(df):
     # 著者名・出版社・書名・本体価格が全て欠損している行を削除
-    df = df.dropna(subset=['著者名', '出版社', '書名', '本体価格'], how='all')
+    df = df.dropna(subset=['著者名', '出版社', '書名', '本体価格'], how='all').copy()
+
     # 17件の出版社欠損値を補完
     df.loc[df['ISBN'].astype(str).str.startswith("978-4-939094"), '出版社'] = "福島テレビ（株）"
     #
