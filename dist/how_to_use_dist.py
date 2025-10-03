@@ -23,7 +23,7 @@ df = normalize_title(df, '書名')
 
 df_clean = clean_df(df)
 
-#正規化
+#正規化した元データのグラフ
 plot_columns = [
     '書名',
     '著者名'
