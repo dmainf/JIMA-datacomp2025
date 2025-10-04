@@ -18,7 +18,7 @@ def plot_distribution(column, df=None):
     print(f"欠損値の数: {null_count}")
     print(f"欠損値の割合: {null_percentage}")
 
-    counts = df[column].value_counts().head(20)
+    counts = df[column].value_counts().head(30)
 
     plt.figure(figsize=(14, 9))
     names = [name.replace('\u3000', ' ').strip() for name in counts.index]
@@ -26,7 +26,7 @@ def plot_distribution(column, df=None):
     plt.yticks(range(len(counts)), names, fontsize=10)
     plt.xlabel('出現回数', fontsize=11)
     plt.ylabel(column, fontsize=11)
-    plt.title(f'{column}の分布(上位20件)', fontsize=13)
+    plt.title(f'{column}の分布(上位30件)', fontsize=13)
     plt.gca().invert_yaxis()
 
     # 欠損値情報をグラフに表示
@@ -38,11 +38,11 @@ def plot_distribution(column, df=None):
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     plt.tight_layout()
-    print(f"\n上位20件の{column}:")
+    print(f"\n上位30件の{column}:")
     print(counts)
 
     os.makedirs('figure', exist_ok=True)
-    output_file = f'figure/{column}_distribution.png'
+    output_file = f'figure/{column}_dist.png'
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     print(f"\nグラフを {output_file} に保存しました")
 
@@ -53,21 +53,19 @@ if __name__ == '__main__':
         for column in columns:
             plot_distribution(column)
     else:
-        print("使用方法: python plot_distribution.py [カラム名1] [カラム名2] ...")
+        print("使用方法: python plot_dist.py [カラム名1] [カラム名2] ...")
 
 
-def plot_count_distribution(column, df=None, df_raw=None):
+def plot_count_distribution(column, df=None, log_x=False, log_y=False):
     """指定されたカラムの出現回数ごとの頻度分布をプロットする"""
-    if df_raw is None:
+    if df is None:
         print("loading data...")
-        df_raw = pd.read_csv('../data/data.txt', sep='\t')
-
+        df = pd.read_csv('../data/data.txt', sep='\t')
     # 元データから出現回数を計算
-    value_counts = df_raw[column].value_counts()
-
+    value_counts = df[column].value_counts()
     # 欠損値をカウント
-    null_count = df_raw[column].isnull().sum()
-    total_count = len(df_raw)
+    null_count = df[column].isnull().sum()
+    total_count = len(df)
     null_percentage = (null_count / total_count * 100).round(2)
 
     # 出現回数ごとの頻度を計算
@@ -76,13 +74,21 @@ def plot_count_distribution(column, df=None, df_raw=None):
     plt.figure(figsize=(20, 9))
     plt.bar(counts_of_counts.index, counts_of_counts.values)
 
-    plt.xlabel(f'各{column}の出現回数（対数スケール）', fontsize=11)
-    plt.ylabel(f'該当する{column}の種類数（対数スケール）', fontsize=11)
+    # x軸ラベル
+    if log_x:
+        plt.xlabel(f'各{column}の出現回数（対数スケール）', fontsize=11)
+        plt.xscale('log')
+    else:
+        plt.xlabel(f'各{column}の出現回数', fontsize=11)
+
+    # y軸ラベル
+    if log_y:
+        plt.ylabel(f'該当する{column}の種類数（対数スケール）', fontsize=11)
+        plt.yscale('log')
+    else:
+        plt.ylabel(f'該当する{column}の種類数', fontsize=11)
+
     plt.title(f'{column}の出現回数ごとの頻度分布', fontsize=13)
-    #分布に応じて対数表記にするか調整して
-    plt.xscale('log')
-    plt.yscale('log')
-    #
     plt.grid(True, alpha=0.3, which='both')
 
     # 欠損値情報をグラフに表示
@@ -99,7 +105,14 @@ def plot_count_distribution(column, df=None, df_raw=None):
     print(counts_of_counts)
 
     os.makedirs('figure', exist_ok=True)
-    output_file = f'figure/{column}_counts_distribution.png'
+    log_suffix = ''
+    if log_x and log_y:
+        log_suffix = '_loglog'
+    elif log_x:
+        log_suffix = '_logx'
+    elif log_y:
+        log_suffix = '_logy'
+    output_file = f'figure/{column}_counts_dist{log_suffix}.png'
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     print(f"\nグラフを {output_file} に保存しました")
 
@@ -109,4 +122,4 @@ if __name__ == '__main__':
         for column in columns:
             plot_count_distribution(column)
     else:
-        print("使用方法: python plot_counts_distribution.py [カラム名1] [カラム名2] ...")
+        print("使用方法: python plot_counts_dist.py [カラム名1] [カラム名2] ...")

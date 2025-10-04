@@ -13,24 +13,28 @@ df_raw = pd.read_csv('../data/data.txt', sep='\t')
 
 space_columns = [
     '書名',
-    '著者名'
+    '著者名',
+    '出版社'
 ]
 df = df_raw.copy()
 for column in space_columns:
     df = delete_space(df, column)
+
 df = normalize_author(df, '著者名')
 df = normalize_title(df, '書名')
 
-df_clean = clean_df(df)
-
-#正規化した元データのグラフ
 plot_columns = [
+    '著者名',
     '書名',
-    '著者名'
+    '大分類',
+    '中分類',
+    '小分類'
 ]
 for column in plot_columns:
     plot_distribution(column, df)
+    plot_count_distribution(column, df, log_x=True, log_y=True)
 
+"""
 #count_encodingしたあとのグラフ
 plot_count_columns = [
     '書名',
@@ -38,3 +42,4 @@ plot_count_columns = [
 ]
 for column in plot_count_columns:
     plot_count_distribution(column, df_clean)
+"""
