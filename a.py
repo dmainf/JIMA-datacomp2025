@@ -4,6 +4,26 @@ from lib.prepro import clean_df
 df_raw = pd.read_csv('data/data.txt', sep='\t')
 df = clean_df(df_raw)
 
+df_original = pd.DataFrame(df)
+
+df_grouped = df_original.groupby(['大分類', '中分類', '小分類']).size().reset_index(name='小分類出現数')
+fig = px.sunburst(
+    df_grouped,
+    path=['大分類', '中分類', '小分類'],
+    values='小分類出現数',
+    title='大分類・中分類・小分類の階層構造（サンバーストチャート）'
+)
+fig.show()
+
+# 3. ツリーマップを作成する場合は、以下のコードを使用できます。
+fig_treemap = px.treemap(
+    df_grouped,
+    path=['大分類', '中分類', '小分類'],
+    values='小分類出現数',
+    title='大分類・中分類・小分類の階層構造（ツリーマップ）'
+)
+fig_treemap.show()
+
 print("=== データの形状 ===")
 print(df_raw.shape)
 

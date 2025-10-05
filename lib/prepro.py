@@ -1,4 +1,5 @@
 import pandas as pd
+import plotly.express as px
 
 def clean_df(df):
     # 著者名・出版社・書名・本体価格が全て欠損している行を削除
@@ -29,6 +30,17 @@ def clean_df(df):
     # 既存の列を上書きしてカウントエンコーディングを適用
     df['中分類'] = df['中分類'].map(count_map_1)
     df['小分類'] = df['小分類'].map(count_map_2)
+
+    df_original = pd.DataFrame(df)
+
+    df_grouped = df_original.groupby(['大分類', '中分類', '小分類']).size().reset_index(name='小分類出現数')
+    fig = px.sunburst(
+        df_grouped,
+        path=['大分類', '中分類', '小分類'],
+        values='小分類出現数',
+        title='大分類・中分類・小分類の階層構造（サンバーストチャート）'
+    )
+    fig.show()
 
     drop_columns=[
         '日付',
