@@ -110,16 +110,6 @@ def clean_df(df):
     df['中分類'] = df['中分類'].map(count_map_1).fillna(0).astype(int)
     df['小分類'] = df['小分類'].map(count_map_2).fillna(0).astype(int)
 
-    df_original = pd.DataFrame(df)
-    df_grouped = df_original.groupby(['大分類', '中分類', '小分類']).size().reset_index(name='小分類出現数')
-    fig = px.sunburst(
-        df_grouped,
-        path=['大分類', '中分類', '小分類'],
-        values='小分類出現数',
-        title='大分類・中分類・小分類の階層構造（サンバーストチャート）'
-    )
-    fig.show()
-
     #drop columns
 
     drop_columns=[
