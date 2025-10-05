@@ -1,6 +1,12 @@
 import pandas as pd
 from lib.prepro import clean_df
 
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', None)
+
+print("loading data...")
 df_raw = pd.read_csv('data/data.txt', sep='\t')
 df = clean_df(df_raw)
 
@@ -46,5 +52,3 @@ print((df.isnull().sum() / len(df) * 100).round(2))
 
 print("\n=== データ型 ===")
 print(df.dtypes)
-
-print(df.head())
