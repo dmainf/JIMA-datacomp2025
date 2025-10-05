@@ -64,17 +64,23 @@ def clean_df(df):
     df = df.dropna(subset=['著者名', '出版社', '書名', '本体価格'], how='all').copy()
 
     # 17件の出版社欠損値を補完 + 出版社の表記ゆれを補完
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-939094-"), '出版社'] = "福島テレビ"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-341-"), '出版社'] = "ごま書房新社"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-387-"), '出版社'] = "サンリオ"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-480-"), '出版社'] = "筑摩書房"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-7698-"), '出版社'] = "潮書房光人新社"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-7770-"), '出版社'] = "ネコ・パブリッシング"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-7796-"), '出版社'] = "三栄"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-7999-"), '出版社'] = "文溪堂"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-8069-"), '出版社'] = "つちや書店"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-88144-"), '出版社'] = "創藝社"
-    df.loc[df['ISBN'].astype(str).str.startswith("978-4-89423-"), '出版社'] = "文溪堂"
+    isbn_to_publisher = {
+        "978-4-939094-": "福島テレビ",
+        "978-4-341-": "ごま書房新社",
+        "978-4-387-": "サンリオ",
+        "978-4-480-": "筑摩書房",
+        "978-4-7698-": "潮書房光人新社",
+        "978-4-7770-": "ネコ・パブリッシング",
+        "978-4-7796-": "三栄",
+        "978-4-7999-": "文溪堂",
+        "978-4-8069-": "つちや書店",
+        "978-4-88144-": "創藝社",
+        "978-4-89423-": "文溪堂",
+        }
+    for prefix, publisher in isbn_to_publisher.items():
+        df.loc[df['ISBN'].astype(str).str.startswith(prefix), '出版社'] = publisher
+    # 出版社名の空白削除
+    df = delete_space(df, '出版社')
     #日付
     df['日付'] = pd.to_datetime(df['日付'])
     df['年'] = df['日付'].dt.year
