@@ -43,11 +43,13 @@ def normalize_title(df, column):
         for delimiter in ['～', '〜', '：', ':']:
             if delimiter in title:
                 title = title.split(delimiter)[0]
-        if '（' in title and '）' in title:
-            matches = re.findall(r'（[^）]+）', title)
-            for match in matches:
-                if not any(keyword in match for keyword in ['関東', '首都圏', '東版', '西版', '北版', '南版', '版', '地域']):
-                    title = title.replace(match, '')
+        # 括弧とその中身を削除（閉じ括弧がない場合も対応）
+        if '（' in title:
+            if '）' in title:
+                # 通常の括弧ペアを削除
+                title = re.sub(r'（[^）]+）', '', title)
+            # 開き括弧以降を削除（閉じ括弧がない場合）
+            title = re.sub(r'（.*$', '', title)
         title = re.sub(r'[０-９]+$', '', title)
         title = re.sub(r'[0-9]+$', '', title)
         if title.endswith('上') or title.endswith('下') or title.endswith('中'):

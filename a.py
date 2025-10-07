@@ -19,6 +19,9 @@ print(df_raw.isnull().sum())
 print("\n=== 欠損値の割合 (%) ===")
 print((df_raw.isnull().sum() / len(df_raw) * 100).round(2))
 
+print("\n=== データ型 ===")
+print(df_raw.dtypes)
+
 
 # データの基本情報
 print("=== データの形状 ===")

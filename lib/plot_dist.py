@@ -18,15 +18,19 @@ def plot_distribution(column, df=None):
     print(f"欠損値の数: {null_count}")
     print(f"欠損値の割合: {null_percentage}")
 
-    counts = df[column].value_counts().head(30)
+    counts = df[column].value_counts().head(20)
 
     plt.figure(figsize=(14, 9))
-    names = [name.replace('\u3000', ' ').strip() for name in counts.index]
+    # 数値型と文字列型の両方に対応
+    if counts.index.dtype == 'object':
+        names = [str(name).replace('\u3000', ' ').strip() for name in counts.index]
+    else:
+        names = [str(name) for name in counts.index]
     plt.barh(range(len(counts)), counts.values)
     plt.yticks(range(len(counts)), names, fontsize=10)
     plt.xlabel('出現回数', fontsize=11)
     plt.ylabel(column, fontsize=11)
-    plt.title(f'{column}の分布(上位30件)', fontsize=13)
+    plt.title(f'{column}の分布(上位20件)', fontsize=13)
     plt.gca().invert_yaxis()
 
     # 欠損値情報をグラフに表示
@@ -38,7 +42,7 @@ def plot_distribution(column, df=None):
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     plt.tight_layout()
-    print(f"\n上位30件の{column}:")
+    print(f"\n上位20件の{column}:")
     print(counts)
 
     os.makedirs('figure', exist_ok=True)
