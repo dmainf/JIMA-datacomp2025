@@ -8,7 +8,7 @@ pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', None)
 
 print("loading data...")
-df_raw = pd.read_csv('data/data.txt', sep='\t')
+df_raw = pd.read_parquet('data/data.parquet')
 print("complete!")
 
 print("=== データの形状 ===")
@@ -31,7 +31,6 @@ onehot_columns = [
 ]
 df = onehot_enc(df, onehot_columns)
 
-print(df.head())
 print("=== データの形状 ===")
 print(df.shape)
 print("\n=== 欠損値の数 ===")
