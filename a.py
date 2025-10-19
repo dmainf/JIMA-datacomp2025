@@ -21,15 +21,19 @@ print("\n=== データ型 ===")
 print(df_raw.dtypes)
 print()
 
-print("###after cleaning###")
+
+print("###after cleaning###\n")
+
 print("loading data...")
 df = pd.read_parquet('data/embed_data.parquet')
 print("complete!")
+print("clean df...")
 df = clean_df(df)
+print("complete!")
 onehot_columns = [
-    '大分類'
+    '書店コード'
 ]
-df = onehot_enc(df, onehot_columns)
+#df = onehot_enc(df, onehot_columns)
 
 print("=== データの形状 ===")
 print(df.shape)
@@ -41,3 +45,7 @@ print("\n=== データ型 ===")
 print(df.dtypes)
 
 print()
+
+print("saving dataflame to data/df.parquet...")
+df.to_parquet('data/df.parquet')
+print("complete!")
