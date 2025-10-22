@@ -129,6 +129,12 @@ def fill_missing_class(df):
     return df
 
 
+def fill_publisher_by_ISBN(df, columns):
+    for prefix, publisher in columns.items():
+        df.loc[df['ISBN'].astype(str).str.startswith(prefix), '出版社'] = publisher
+    return df
+
+
 def clean_df(df):
     df = df.drop('Unnamed: 0', axis=1)
     df = df.dropna(subset=['出版社', '書名', '著者名', '本体価格'], how='all').copy()
@@ -145,8 +151,6 @@ def clean_df(df):
         "978-4-88144-": "創藝社",
         "978-4-89423-": "文溪堂",
     }
-    for prefix, publisher in isbn_to_publisher.items():
-        df.loc[df['ISBN'].astype(str).str.startswith(prefix), '出版社'] = publisher
     delete_space_columns = [
         'ISBN',
         '書名',
@@ -159,6 +163,7 @@ def clean_df(df):
         '著者名'
     ]
     df = clean_time(df)
+    df = fill_publisher_by_ISBN(df, isbn_to_publisher)
     df = delete_space(df, delete_space_columns)
     df = normalize_author(df)
     df = normalize_title(df)
