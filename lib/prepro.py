@@ -1,5 +1,4 @@
 import pandas as pd
-import polars as pl
 
 def clean_time(df):
     df['日付'] = pd.to_datetime(df['日付'])
@@ -114,9 +113,8 @@ def normalize_title(df):
 def remove_volume_number(df):
     """
     書名から「_巻数」部分を除去する
-
     前提: normalize_title()で「書名_巻数」形式に統一されていること
-    例: 「タイトル_１」→「タイトル」
+    例: 「タイトル_1」→「タイトル」
         「タイトル_上」→「タイトル」
         「タイトル」→「タイトル」（巻数なしはそのまま）
     """
