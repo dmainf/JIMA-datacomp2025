@@ -24,12 +24,8 @@ if __name__ == '__main__':
     print(f"\n{'='*60}")
     print("Starting parallel processing...")
     print('='*60)
-
-    # 並列処理で各書店を処理
     with Pool(processes=cpu_count()) as pool:
         results = pool.map(process_store, range(1, 36))
-
-    # 結果を表示
     print(f"\n{'='*60}")
     print("Processing Results:")
     print('='*60)

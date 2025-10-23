@@ -134,68 +134,40 @@ def plot_sum_by_book(df=None, output_dir='figure', store_id=None):
     if df is None:
         print("loading data...")
         df = pd.read_parquet('../data/data.parquet')
-
-    # 売上を計算（本体価格 × POS販売冊数）
     df['売上'] = df['本体価格'] * df['POS販売冊数']
-
-    # 書名ごとに累積日数と売上を集計（高速化）
     grouped = df.groupby(['書名', '累積日数'], observed=True)['売上'].sum().reset_index()
-
-    # 各書名の累積売上を計算
     grouped['累積売上'] = grouped.groupby('書名', observed=True)['売上'].cumsum()
-
-    # 各書名の最終累積売上を取得
     final_sales = grouped.groupby('書名', observed=True)['累積売上'].last().sort_values(ascending=False)
-
-    # 上位10位を取得
     top10_books = final_sales.head(10)
     top10_book_names = set(top10_books.index.tolist())
-
     print("上位10位の書名:")
     for i, (book, sales) in enumerate(top10_books.items(), 1):
         print(f"{i}. {book}: {sales:,.0f}円")
-
     print(f"\n書名のユニーク数: {len(final_sales)}")
-
-    # グラフ作成
     fig, ax = plt.subplots(figsize=(16, 10))
-
-    # 上位10位以外を一括プロット（高速化）
     other_books = grouped[~grouped['書名'].isin(top10_book_names)]
     for book_name in other_books['書名'].unique():
         book_data = other_books[other_books['書名'] == book_name]
         ax.plot(book_data['累積日数'].values, book_data['累積売上'].values,
                 alpha=0.3, linewidth=0.5, color='gray', rasterized=True)
-
-    # 上位10位を順位順にプロット（レジェンドが順位順になる）
     for book_name in top10_books.index:
         book_data = grouped[grouped['書名'] == book_name]
         ax.plot(book_data['累積日数'].values, book_data['累積売上'].values,
                 label=str(book_name), alpha=0.8, linewidth=2)
-
     ax.set_xlabel('累積日数', fontsize=12)
     ax.set_ylabel('累積売上（円）', fontsize=12)
-
-    # タイトルに書店IDを含める
     title = '書名ごとの累積売上推移（上位10位を強調表示）'
     if store_id is not None:
         title += f' - 書店{store_id}'
     ax.set_title(title, fontsize=14)
     ax.grid(True, alpha=0.3)
-
-    # レジェンドを表示（順位順）
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
-
     plt.tight_layout()
-
     os.makedirs(output_dir, exist_ok=True)
-
-    # ファイル名に書店IDを含める
     if store_id is not None:
         output_file = os.path.join(output_dir, f'cumulative_sales_store_{store_id}.png')
     else:
         output_file = os.path.join(output_dir, 'cumulative_sales_by_book.png')
-
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     plt.close(fig)  # メモリ解放
     print(f"\nグラフを {output_file} に保存しました")
