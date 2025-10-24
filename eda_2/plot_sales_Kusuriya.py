@@ -84,12 +84,14 @@ def process_store(i):
     """各書店のデータを処理する関数"""
     file_path = f'data/df_{i}.parquet'
     book_name_filter = '薬屋のひとりごと'
-
     if not os.path.exists(file_path):
         return f"Store {i}: File not found, skipping..."
 
     try:
         df = pd.read_parquet(file_path)
+        if '大分類' not in df.columns:
+            return f"Store {i}: '大分類' column not found, skipping..."
+        df = df[df['大分類'].astype(str).str.contains('コミ', na=False)]
         df = df[df['書名'].str.contains(book_name_filter, na=False)]
         if df.empty:
             return f"Store {i}: No data for '{book_name_filter}', skipping..."
