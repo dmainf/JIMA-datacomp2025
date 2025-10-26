@@ -13,6 +13,7 @@ PREDICTION_LENGTH = 28
 
 if __name__ == '__main__':
     device_type = "mps" if torch.backends.mps.is_available() else "cpu"
+    print(f"\n=== Device: {device_type} ===")
     print("\n=== Loading All Store Data ===")
     df = load_all_stores(data='by_store', exclude_stores=[26, 27])
     print(f"Total records: {len(df)}")
