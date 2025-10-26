@@ -2,36 +2,29 @@ import pandas as pd
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from lib.plot_dist import plot_sum_by_book
-from multiprocessing import Pool, cpu_count
+from lib.plot_dist import *
+from lib.prepro import *
 
-def process_store(i):
-    """各書店のデータを処理する関数"""
+for i in range(1, 36):
+    print(f"\n{'='*60}")
+    print(f"Processing df_{i}.parquet...")
+    print('='*60)
+
     file_path = f'data/df_{i}.parquet'
 
     if not os.path.exists(file_path):
-        return f"Store {i}: File not found, skipping..."
+        print(f"File {file_path} not found, skipping...")
+        continue
 
-    try:
-        df = pd.read_parquet(file_path)
-        plot_sum_by_book(df, output_dir='figure', store_id=i)
-        return f"Store {i}: Completed ({len(df)} rows)"
-    except Exception as e:
-        return f"Store {i}: Error - {str(e)}"
+    print("loading data...")
+    df = pd.read_parquet(file_path)
+    print(f"complete! Loaded {len(df)} rows")
 
-if __name__ == '__main__':
-    print(f"Using {cpu_count()} CPU cores for parallel processing")
-    print(f"\n{'='*60}")
-    print("Starting parallel processing...")
-    print('='*60)
-    with Pool(processes=cpu_count()) as pool:
-        results = pool.map(process_store, range(1, 36))
-    print(f"\n{'='*60}")
-    print("Processing Results:")
-    print('='*60)
-    for result in results:
-        print(result)
+    plot_sum_by_book(df, output_dir='figure', store_id=i)
 
-    print(f"\n{'='*60}")
-    print("All stores processed successfully!")
-    print('='*60)
+print(f"\n{'='*60}")
+print("All stores processed successfully!")
+print('='*60)
+
+df = remove_volume_number(df)
+plot_sum_by_book(df)
