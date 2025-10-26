@@ -134,9 +134,17 @@ def plot_sum_by_book(df=None, output_dir='figure', store_id=None):
     if df is None:
         print("loading data...")
         df = pd.read_parquet('../data/data.parquet')
+
+    print("売上を計算中...")
     df['売上'] = df['本体価格'] * df['POS販売冊数']
+
+    print("書名と累積日数でグループ化中...")
     grouped = df.groupby(['書名', '累積日数'], observed=True)['売上'].sum().reset_index()
+
+    print("累積売上を計算中...")
     grouped['累積売上'] = grouped.groupby('書名', observed=True)['売上'].cumsum()
+
+    print("最終売上をソート中...")
     final_sales = grouped.groupby('書名', observed=True)['累積売上'].last().sort_values(ascending=False)
     top10_books = final_sales.head(10)
     top10_book_names = set(top10_books.index.tolist())
@@ -144,16 +152,28 @@ def plot_sum_by_book(df=None, output_dir='figure', store_id=None):
     for i, (book, sales) in enumerate(top10_books.items(), 1):
         print(f"{i}. {book}: {sales:,.0f}円")
     print(f"\n書名のユニーク数: {len(final_sales)}")
+
+    print("グラフを作成中...")
     fig, ax = plt.subplots(figsize=(16, 10))
+
+    # その他の書名データを分離
     other_books = grouped[~grouped['書名'].isin(top10_book_names)]
-    for book_name in other_books['書名'].unique():
-        book_data = other_books[other_books['書名'] == book_name]
-        ax.plot(book_data['累積日数'].values, book_data['累積売上'].values,
-                alpha=0.3, linewidth=0.5, color='gray', rasterized=True)
-    for book_name in top10_books.index:
-        book_data = grouped[grouped['書名'] == book_name]
+
+    # その他の書名を一括プロット（最適化版）
+    if len(other_books) > 0:
+        print(f"その他の書名をプロット中（{len(other_books['書名'].unique())}件）...")
+        # グループごとにデータを準備して一括プロット
+        other_books_grouped = other_books.groupby('書名', observed=True)
+        for book_name, book_data in other_books_grouped:
+            ax.plot(book_data['累積日数'].values, book_data['累積売上'].values,
+                    alpha=0.3, linewidth=0.5, color='gray', rasterized=True)
+
+    print("上位10位の書名をプロット中...")
+    top10_grouped = grouped[grouped['書名'].isin(top10_book_names)].groupby('書名', observed=True)
+    for book_name, book_data in top10_grouped:
         ax.plot(book_data['累積日数'].values, book_data['累積売上'].values,
                 label=str(book_name), alpha=0.8, linewidth=2)
+
     ax.set_xlabel('累積日数', fontsize=12)
     ax.set_ylabel('累積売上（円）', fontsize=12)
     title = '書名ごとの累積売上推移（上位10位を強調表示）'

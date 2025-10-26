@@ -82,7 +82,11 @@ def normalize_title(df):
     def process_title(title):
         if pd.isna(title):
             return title
+
         original_title = title
+
+        # ========== 作品別の個別処理 ========== #
+
         # 1. 薬屋のひとりごと
         if title.startswith('薬屋のひとりごと'):
             # 特装版を除去
@@ -872,10 +876,9 @@ def clean_df(df):
     ]
     df = clean_time(df)
     df = fill_publisher_by_ISBN(df, isbn_to_publisher)
-    # normalize_title()はスペースを前提としているので、delete_space()より先に実行
+    df = delete_space(df, delete_space_columns)
     df = normalize_author(df)
     df = normalize_title(df)
-    df = delete_space(df, delete_space_columns)
     #df = remove_volume_number(df)
     df = fill_missing_class(df)
     """
