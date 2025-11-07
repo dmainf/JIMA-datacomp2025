@@ -842,15 +842,7 @@ def fill_missing_class(df):
     return df
 
 
-def fill_publisher_by_ISBN(df, columns):
-    for prefix, publisher in columns.items():
-        df.loc[df['ISBN'].astype(str).str.startswith(prefix), '出版社'] = publisher
-    return df
-
-
-def clean_df(df):
-    df = df.drop('Unnamed: 0', axis=1)
-    df = df.dropna(subset=['出版社', '書名', '著者名', '本体価格'], how='all').copy()
+def fill_publisher_by_ISBN(df):
     isbn_to_publisher = {
         "978-4-939094-": "福島テレビ",
         "978-4-341-": "ごま書房新社",
@@ -864,31 +856,33 @@ def clean_df(df):
         "978-4-88144-": "創藝社",
         "978-4-89423-": "文溪堂",
     }
-    delete_space_columns = [
-        'ISBN',
-        '書名',
-        '出版社',
-        '著者名'
-    ]
-    df = clean_time(df)
-    df = fill_publisher_by_ISBN(df, isbn_to_publisher)
-    # normalize_title()はスペースを前提としているので、delete_space()より先に実行
-    df = normalize_author(df)
-    df = normalize_title(df)
-    df = delete_space(df, delete_space_columns)
-    #df = remove_volume_number(df)
-    df = fill_missing_class(df)
-    """
-    enc_columns = [
-        '出版社',
-        '書名',
-        '著者名'
-    ]
-    df = enc(df, enc_columns)
-    """
+    for prefix, publisher in isbn_to_publisher.items():
+        df.loc[df['ISBN'].astype(str).str.startswith(prefix), '出版社'] = publisher
+    return df
+
+def merge_store_detail(df, store_detail):
+    df = df.merge(store_detail, on='書店コード', how='left')
     return df
 
 
+def clean_df(df, store_detail):
+    df = df.drop('Unnamed: 0', axis=1)
+    df = df.dropna(subset=['出版社', '書名', '著者名', '本体価格'], how='all').copy()
+
+    df = clean_time(df)
+    df = fill_publisher_by_ISBN(df)
+    df = normalize_author(df)
+    df = normalize_title(df)
+
+    delete_space_columns = df.select_dtypes(include=['object']).columns.tolist()
+    df = fill_missing_class(df)
+    df = merge_store_detail(df, store_detail)
+    df = delete_space(df, delete_space_columns)
+    #df = remove_volume_number(df)
+
+    return df
+
+"""
 def count_enc(df, columns):
     for col in columns:
         counts = df[col].value_counts().to_dict()
@@ -903,14 +897,6 @@ def onehot_enc(df, columns):
 
 
 def enc(df, columns):
-    """
-    出現頻度順にエンコード(pandas版)
-    - 最頻値: ユニーク数(最大値)
-    - 最低頻度: 1(最小値)
-    - 同頻度の場合: 値の昇順で処理
-    - 元のカラムの「右隣」に <col>_enc を追加
-    """
-
     for col in columns:
         vc = df[col].value_counts().reset_index()
         vc.columns = [col, "count"]
@@ -931,3 +917,4 @@ def label_enc(df, columns):
         df[col] = le.fit_transform(df[col].fillna('Unknown').astype(str))
 
     return df
+"""
