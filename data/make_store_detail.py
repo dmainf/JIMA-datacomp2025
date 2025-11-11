@@ -63,7 +63,17 @@ try:
 except Exception as e:
     print(f"Not Found : store_code.txt {e}")
 
-
+"""
+ N
+W E
+ S
+"""
+"""
+value of mesh
+1 2 3
+4 5 6
+7 8 9
+"""
 print("input mesh population...")
 for i in range(1, 10):
     col = f"メッシュ{i}"
@@ -122,7 +132,6 @@ if all(col in df_store.columns for col in ["市区別_夜間人口", "市区別_
     print("calculation day/night")
 else:
     print("Not Found : daytime or nighttime")
-
 print("check column...")
 expected_dtypes = {
     "書店コード": "int",
@@ -192,6 +201,7 @@ df_store.to_parquet(output_parquet, index=False)
 print(f"Parquet: {output_parquet}")
 
 print("Complete!")
+
 
 
 print("loading data...")
