@@ -65,14 +65,6 @@ except Exception as e:
 
 
 print("input mesh population...")
-"""
-1(-11) 2(-10) 3(-9)
-4(-1)  5(0)   6(+1)
-7(+9)  8(+10) 9(+11)
-"""
-mesh_offsets = [-11, -10, -9, -1, 0, +1, +9, +10, +11]
-for i, offset in enumerate(mesh_offsets, 1):
-    df_store[f"メッシュ{i}"] = df_store["店舗メッシュ"] + offset
 for i in range(1, 10):
     col = f"メッシュ{i}"
     new_col = f"メッシュ{i}_人口"
