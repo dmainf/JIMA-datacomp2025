@@ -15,7 +15,8 @@ def get_population_from_mesh(mesh_code: str):
             return 0
 
         prefix = mesh_code[:4]
-        file_name = f"tblT001100S{prefix}.csv"
+        # ③ 読み込むファイルを tblT001140S に変更
+        file_name = f"tblT001140S{prefix}.csv"
         file_path = os.path.join(DATA_STORE_DIR, file_name)
 
         if not os.path.exists(file_path):
@@ -48,11 +49,13 @@ def get_population_from_mesh(mesh_code: str):
         print(f"Error : mesh_code = {mesh_code} {e}")
         return 0
 
+# --- Storeファイル読み込み ---
 try:
     df_store = pd.read_csv(STORE_FILE, encoding="utf-8-sig")
 except UnicodeDecodeError:
     df_store = pd.read_csv(STORE_FILE, encoding="cp932")
 
+# --- store_code.txtの補完 ---
 try:
     df_codes = pd.read_csv(
         STORE_CODE_FILE,
@@ -60,7 +63,6 @@ try:
         engine="python",
         encoding="utf-8-sig"
     )
-
     df_codes.columns = df_codes.columns.str.strip().str.replace("　", "")
 
     if len(df_store) == len(df_codes):
@@ -71,26 +73,25 @@ try:
         print("input store_code.txt")
     else:
         print(f"Error : Store.csv={len(df_store)}, store_code.txt={len(df_codes)}")
-
 except Exception as e:
     print(f"Not Found : store_code.txt {e}")
 
-# --- メッシュ人口の処理 ---
+# --- メッシュ人口計算 ---
 print("input store_mesh...")
-df_store["メッシュE値"] = df_store["店舗メッシュ"].apply(get_population_from_mesh)
+df_store["3次メッシュ人口"] = df_store["店舗メッシュ"].apply(get_population_from_mesh)  # ①
 
 print("input around_mesh...")
 周辺カラム = [f"周辺{i}" for i in range(1, 9)]
 for col in 周辺カラム:
-    new_col = f"{col}_人口"
+    new_col = f"{col}_3次人口"  # ②
     df_store[new_col] = df_store[col].apply(get_population_from_mesh)
 
-for col in [f"周辺{i}_人口" for i in range(1, 9)]:
+for col in [f"周辺{i}_3次人口" for i in range(1, 9)]:
     df_store[col] = pd.to_numeric(df_store[col], errors="coerce").fillna(0)
 
-df_store["周辺合計人口"] = df_store[[f"周辺{i}_人口" for i in range(1, 9)]].astype(float).sum(axis=1)
+df_store["周辺合計人口"] = df_store[[f"周辺{i}_3次人口" for i in range(1, 9)]].astype(float).sum(axis=1)
 
-# --- 時間カラムのdatetime化 ---
+# --- 営業時間をdatetime型で計算 ---
 time_cols = ["開店時間(平)", "閉店時間(平)", "開店時間(特)", "閉店時間(特)"]
 
 def convert_time(value):
@@ -123,8 +124,7 @@ for mode in ["(平)", "(特)"]:
 
                 # 24時間営業対応
                 if open_t == close_t:
-                    return dt.time(23, 59, 59)  # Excel上では 24:00:00 とほぼ同義に扱われる
-
+                    return dt.time(23, 59, 59)
                 # 翌日閉店対応
                 if end <= start:
                     end += dt.timedelta(days=1)
@@ -139,22 +139,20 @@ for mode in ["(平)", "(特)"]:
 
 print("change datetime")
 
-
-# 昼夜比計算
+# --- 昼夜比計算 ---
 if all(col in df_store.columns for col in ["市区別_夜間人口", "市区別_昼間人口"]):
     df_store["昼間/夜間割合"] = df_store.apply(
         lambda x: round((x["市区別_昼間人口"] / x["市区別_夜間人口"]) * 100, 1)
         if x["市区別_夜間人口"] not in [0, None, ""] else 0,
         axis=1
-    )
+    ).astype(float)  # ④ 小数点第1位を保持
     print("calculation day/night")
 else:
     print("Not Found : daytime or nighttime")
-    
-# --- カラム型チェック＆自動変換 ---
-print("chack column...")
 
-# 理想の型マップを定義
+# --- カラム型チェック＆変換 ---
+print("check column...")
+
 expected_dtypes = {
     "書店コード": "int",
     "書店名": "object",
@@ -184,23 +182,24 @@ expected_dtypes = {
     "市区別_夜間人口": "int",
     "市区別_昼間人口": "int",
     "昼間フラグ": "int",
-    "昼間/夜間割合": "int",
-    "メッシュE値": "int",
-    "周辺1_人口": "int",
-    "周辺2_人口": "int",
-    "周辺3_人口": "int",
-    "周辺4_人口": "int",
-    "周辺5_人口": "int",
-    "周辺6_人口": "int",
-    "周辺7_人口": "int",
-    "周辺8_人口": "int",
+    "昼間/夜間割合": "float",   # ④ float化
+    "3次メッシュ人口": "int",   # ① 変更済み
+    "周辺1_3次人口": "int",
+    "周辺2_3次人口": "int",
+    "周辺3_3次人口": "int",
+    "周辺4_3次人口": "int",
+    "周辺5_3次人口": "int",
+    "周辺6_3次人口": "int",
+    "周辺7_3次人口": "int",
+    "周辺8_3次人口": "int",
     "周辺合計人口": "int"
 }
 
-# 変換
 def fix_dtype(series, target_type):
     if target_type == "int":
         return pd.to_numeric(series, errors="coerce").fillna(0).astype(int)
+    elif target_type == "float":
+        return pd.to_numeric(series, errors="coerce").astype(float)
     elif target_type == "datetime":
         if all(isinstance(v, dt.time) or pd.isnull(v) for v in series):
             return series
@@ -221,10 +220,7 @@ for col, t in expected_dtypes.items():
 
 print("check complete")
 
-output_csv = os.path.join(BASE_DIR, "data", "Store_mesh.csv")
-output_parquet = os.path.join(BASE_DIR, "data", "Store_mesh.parquet")
-
-# --- 出力 ---
+# --- 出力（CSV + Parquet） ---
 output_csv = os.path.join(BASE_DIR, "data", "Store_mesh.csv")
 output_parquet = os.path.join(BASE_DIR, "data", "Store_mesh.parquet")
 
@@ -235,5 +231,3 @@ df_store.to_parquet(output_parquet, index=False)
 print(f"Parquet: {output_parquet}")
 
 print("Complete!")
-
-
