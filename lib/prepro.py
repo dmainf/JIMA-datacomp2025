@@ -1863,22 +1863,38 @@ def normalize_title(df):
     return df
 
 
-def remove_volume_number(df):
+def remove_volume_number(df, remove_series=False):
     """
     書名から「_巻数」部分を除去する
-    前提: normalize_title()で「書名_巻数」形式に統一されていること
-    例: 「タイトル_1」→「タイトル」
-        「タイトル_上」→「タイトル」
-        「タイトル」→「タイトル」（巻数なしはそのまま）
+    前提: normalize_title()で「作品_シリーズ_巻数」形式に統一されていること
+
+    引数:
+        df: DataFrame
+        remove_series: Trueの場合、シリーズ名も除去する
+
+    例:
+        remove_series=False:
+            「作品_シリーズ_巻数」→「作品_シリーズ」
+            「作品_巻数」→「作品」
+            「作品」→「作品」
+        remove_series=True:
+            「作品_シリーズ_巻数」→「作品」
+            「作品_巻数」→「作品」
+            「作品」→「作品」
     """
     def process_volume(title):
         if pd.isna(title):
             return title
-        # _以降を除去（巻数部分）
-        if '_' in title:
-            return title.split('_')[0]
-        return title
-
+        if '_' not in title:
+            return title
+        parts = title.split('_')
+        if remove_series:
+            return parts[0]
+        else:
+            if len(parts) >= 3:
+                return f"{parts[0]}_{parts[1]}"
+            else:
+                return parts[0]
     df['書名'] = df['書名'].apply(process_volume)
     return df
 
