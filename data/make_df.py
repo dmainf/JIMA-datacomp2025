@@ -5,7 +5,7 @@ from lib.prepro import *
 
 print("loading data...")
 df_raw = pd.read_parquet('data.parquet')
-store_detail = pd.read_parquet('store_detail.parquet')
+store_detail = pd.read_csv('store_detail.csv')
 print("complete!")
 
 print("=== データの形状 ===")
@@ -20,7 +20,7 @@ print()
 print()
 
 print("###after cleaning###")
-df = df_raw.copy()
+df = df_raw.deepcopy()
 df = clean_df(df, store_detail)
 
 print("=== データの形状 ===")

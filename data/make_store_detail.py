@@ -205,8 +205,14 @@ print("Complete!")
 
 
 print("loading data...")
+store_detail = pd.read_csv('store_detail.csv')
+print("complete!")
+
+"""
+print("loading data...")
 store_detail = pd.read_parquet('store_detail.parquet')
 print("complete!")
+"""
 
 print("=== データの形状 ===")
 print(store_detail.shape)
