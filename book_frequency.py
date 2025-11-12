@@ -1,7 +1,6 @@
 import pandas as pd
 from lib.prepro import *
 
-# データを読み込み
 print('loading data...')
 df = pd.read_parquet('data/data.parquet')
 print('complete!')
@@ -9,7 +8,7 @@ df = normalize_title(df)
 print('complete!')
 
 df['書名'] = df['書名'].apply(lambda x: x.rsplit('_', 1)[0] if pd.notna(x) and '_' in str(x) else x)
-print('書名の最も右の_以降を削除完了!')
+print('書名の最も右の_以降を削除完了')
 
 frequency_df = df.groupby(['書名']).size().reset_index(name='出現回数')
 frequency_df = frequency_df.sort_values('出現回数', ascending=False)
