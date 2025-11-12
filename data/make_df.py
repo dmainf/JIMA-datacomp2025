@@ -5,7 +5,7 @@ from lib.prepro import *
 
 print("loading data...")
 df_raw = pd.read_parquet('data.parquet')
-store_detail = pd.read_csv('store_detail.csv')
+store_detail = pd.read_parquet('store_detail.parquet')
 print("complete!")
 
 print("=== データの形状 ===")
