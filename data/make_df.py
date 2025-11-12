@@ -20,7 +20,7 @@ print()
 print()
 
 print("###after cleaning###")
-df = df_raw.deepcopy()
+df = df_raw.copy()
 df = clean_df(df, store_detail)
 
 print("=== データの形状 ===")
