@@ -1974,7 +1974,7 @@ def clean_df(df, store_detail):
     df = clean_time(df)
     df = fill_publisher_by_ISBN(df)
     df = normalize_author(df)
-    df = normalize_title(df)
+    df = normalize_title(df, remove_series=True)
 
     delete_space_columns = df.select_dtypes(include=['object']).columns.tolist()
     df = fill_missing_class(df)
