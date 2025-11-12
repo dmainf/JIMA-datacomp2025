@@ -1857,17 +1857,12 @@ def normalize_title(df):
         for magazine in weekly_magazines:
             if magazine in title:
                 return original_title
-        # 一般的なパターン: 「タイトル　巻数」
-        match = re.match(r'^(.+?)　+([０-９\d]+)$', title)
-        if match:
-            base_title = match.group(1)
-            volume = match.group(2).translate(trans_table)
-            return f"{base_title}_original_{volume}"
-        # 変更がなければ元のタイトルを返す
         return original_title
 
     df['書名'] = df['書名'].apply(process_title)
     return df
+
+
 def remove_volume_number(df):
     """
     書名から「_巻数」部分を除去する
