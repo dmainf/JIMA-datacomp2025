@@ -96,12 +96,13 @@ def convert_time(value):
             hour = 0
         if not (0 <= hour <= 23):
             return None
-        return dt.time(hour, minute, 0)
+        return f"{hour:02d}:{minute:02d}"
     except Exception:
         return None
 for col in time_cols:
     if col in df_store.columns:
         df_store[col] = df_store[col].apply(convert_time)
+        df_store[col] = pd.to_datetime(df_store[col], format='%H:%M')
 for mode in ["(平)", "(特)"]:
     open_col = f"開店時間{mode}"
     close_col = f"閉店時間{mode}"
@@ -111,14 +112,13 @@ for mode in ["(平)", "(特)"]:
             open_t = row[open_col]
             close_t = row[close_col]
             if pd.notnull(open_t) and pd.notnull(close_t):
-                start = dt.datetime.combine(dt.date.today(), open_t)
-                end = dt.datetime.combine(dt.date.today(), close_t)
                 if open_t == close_t:
                     return 24 * 60
-                if end <= start:
-                    end += dt.timedelta(days=1)
-                delta = (end - start).seconds
-                minutes = delta // 60
+                if close_t <= open_t:
+                    delta = (close_t - open_t) + pd.Timedelta(days=1)
+                else:
+                    delta = close_t - open_t
+                minutes = int(delta.total_seconds() // 60)
                 return minutes
             return None
         df_store[work_col] = df_store.apply(calc_duration, axis=1)
@@ -178,9 +178,7 @@ def fix_dtype(series, target_type):
     elif target_type == "float":
         return pd.to_numeric(series, errors="coerce").astype(float)
     elif target_type == "datetime":
-        if all(isinstance(v, dt.time) or pd.isnull(v) for v in series):
-            return series
-        return pd.to_datetime(series, errors="coerce").dt.time
+        return pd.to_datetime(series, errors="coerce")
     elif target_type == "object":
         return series.astype(str)
     return series
@@ -191,8 +189,13 @@ for col, t in expected_dtypes.items():
         print(f"Not Found : column {col}")
 print("check complete")
 
+df_output = df_store.copy()
+for col in ["開店時間(平)", "閉店時間(平)", "開店時間(特)", "閉店時間(特)"]:
+    if col in df_output.columns:
+        df_output[col] = df_output[col].dt.strftime('%H:%M')
+
 output_csv = os.path.join(BASE_DIR, "store_detail.csv")
-df_store.to_csv(output_csv, index=False, encoding="utf-8-sig")
+df_output.to_csv(output_csv, index=False, encoding="utf-8-sig")
 print(f"CSV: {output_csv}")
 """
 output_parquet = os.path.join(BASE_DIR, "store_detail.parquet")
@@ -206,6 +209,9 @@ print("Complete!")
 
 print("loading data...")
 store_detail = pd.read_csv('store_detail.csv')
+for col in ['開店時間(平)', '閉店時間(平)', '開店時間(特)', '閉店時間(特)']:
+    if col in store_detail.columns:
+        store_detail[col] = pd.to_datetime(store_detail[col], format='%H:%M')
 print("complete!")
 
 """
