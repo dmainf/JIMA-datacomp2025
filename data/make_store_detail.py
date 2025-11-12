@@ -191,14 +191,14 @@ for col, t in expected_dtypes.items():
         print(f"Not Found : column {col}")
 print("check complete")
 
-"""
-output_csv = os.path.join(BASE_DIR, "Store_mesh.csv")
+output_csv = os.path.join(BASE_DIR, "store_detail.csv")
 df_store.to_csv(output_csv, index=False, encoding="utf-8-sig")
 print(f"CSV: {output_csv}")
 """
 output_parquet = os.path.join(BASE_DIR, "store_detail.parquet")
 df_store.to_parquet(output_parquet, index=False)
 print(f"Parquet: {output_parquet}")
+"""
 
 print("Complete!")
 
