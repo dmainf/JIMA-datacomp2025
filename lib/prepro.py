@@ -1967,14 +1967,15 @@ def merge_store_detail(df, store_detail):
     return df
 
 
-def clean_df(df, store_detail):
+def clean_df(df, store_detail, remove_series=False):
     df = df.drop('Unnamed: 0', axis=1)
     df = df.dropna(subset=['出版社', '書名', '著者名', '本体価格'], how='all').copy()
 
     df = clean_time(df)
     df = fill_publisher_by_ISBN(df)
     df = normalize_author(df)
-    df = normalize_title(df, remove_series=True)
+    df = normalize_title(df)
+    df = remove_volume_number(df, remove_series)
 
     delete_space_columns = df.select_dtypes(include=['object']).columns.tolist()
     df = fill_missing_class(df)
