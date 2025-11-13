@@ -340,7 +340,7 @@ def normalize_title(df):
             exclude_keywords = ['ツキウタ', 'オレ様', 'アニア', '恐竜', '餃子', '迷宮',
                                'サキュバス', 'ラビッツ', '冒険大陸', 'アニマル']
             if any(x in title for x in exclude_keywords):
-                return original_title.replace(' ', '').replace('　', '')
+                return original_title
             # 完全版
             if '完全版' in title_no_space:
                 match = re.search(r'[０-９\d]+', title)
@@ -2251,7 +2251,7 @@ def normalize_title(df):
             if program_name:
                 return f'ＮＨＫラジオ_{program_name}_0'
             # 番組名が取れない場合は元のタイトルを返す
-            return original_title.replace(' ', '').replace('　', '')
+            return original_title
 
         # 183. アルジャーノンに花束を
         if 'アルジャーノンに花束を' in title_no_space:
@@ -2718,7 +2718,7 @@ def normalize_title(df):
                 # 全ての空白を削除
                 cleaned_title = cleaned_title.replace(' ', '').replace('　', '')
                 return cleaned_title
-        return original_title.replace(' ', '').replace('　', '')
+        return original_title
 
     df['書名'] = df['書名'].apply(process_title)
     return df
