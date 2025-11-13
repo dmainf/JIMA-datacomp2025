@@ -135,7 +135,7 @@ for store_code in store_codes:
             print(f"  Error: {book_name[:30]}: {str(e)[:50]}")
         ax.set_title(f'{book_name[:50]}', fontsize=9, fontweight='bold')
         ax.set_xlabel('日付', fontsize=8)
-        ax.set_ylabel('売上高（円）', fontsize=8)
+        ax.set_ylabel('売上（円）', fontsize=8)
         ax.legend(fontsize=7, loc='upper right')
         ax.grid(True, alpha=0.3, linestyle='--')
         ax.tick_params(axis='x', rotation=45, labelsize=7)
