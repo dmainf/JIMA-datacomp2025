@@ -78,12 +78,12 @@ def normalize_title(df):
         if pd.isna(title):
             return title
         original_title = title
-        title = re.sub(r'　+(上)$', '　1', title)
-        title = re.sub(r'　+(下)$', '　2', title)
-        title = re.sub(r'　+(前編)$', '　1', title)
-        title = re.sub(r'　+(後編)$', '　2', title)
+
+        # スペース削除版を作成（パターンマッチング用）
+        title_no_space = title.replace(' ', '').replace('　', '')
+
         # 1. 葬送のフリーレン
-        if '葬送のフリーレン' in title:
+        if '葬送のフリーレン' in title_no_space:
             # 小説
             if '小説' in title or '前奏' in title or '魂の眠る地' in title:
                 return '葬送のフリーレン_小説_0'
@@ -101,16 +101,16 @@ def normalize_title(df):
                 return f'葬送のフリーレン_original_{vol}'
             return '葬送のフリーレン_original_0'
         # 2. 怪獣８号
-        if '怪獣８号' in title:
+        if '怪獣８号' in title_no_space:
             # スピンオフ: side B
-            if 'ｓｉｄｅ　Ｂ' in title:
+            if 'ｓｉｄｅＢ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'怪獣８号_sideB_{vol}'
                 return '怪獣８号_sideB_0'
             # スピンオフ: RELAX
-            if 'ＲＥＬＡＸ' in title:
+            if 'ＲＥＬＡＸ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -126,7 +126,7 @@ def normalize_title(df):
                 return f'怪獣８号_original_{vol}'
             return '怪獣８号_original_0'
         # 3. 呪術廻戦
-        if '呪術廻戦' in title:
+        if '呪術廻戦' in title_no_space:
             # 小説
             if '劇場版' in title and ('ノベライズ' in title or '０' in title):
                 return '呪術廻戦_劇場版0ノベライズ_0'
@@ -146,58 +146,58 @@ def normalize_title(df):
                 vol = match.group(1).translate(trans_table)
                 return f'呪術廻戦_original_{vol}'
             return '呪術廻戦_original_0'
-        # 4. ＯＮＥ　ＰＩＥＣＥ
-        if 'ＯＮＥ　ＰＩＥＣＥ' in title:
+        # 4. ＯＮＥＰＩＥＣＥ
+        if 'ＯＮＥＰＩＥＣＥ' in title_no_space:
             # キャラクタースピンオフ
             characters = ['ロロノア・ゾロ', 'サンジ', 'ナミ', 'ウソップ', 'ニコ・ロビン',
                          'トニートニー・チョッ', 'ブルック', 'フランキー']
             for char in characters:
                 if char in title:
-                    return 'ＯＮＥ　ＰＩＥＣＥ_スピンオフ_0'
+                    return 'ＯＮＥＰＩＥＣＥ_スピンオフ_0'
             # 映画関連
             if 'ＦＩＬＭ' in title or '劇場版' in title:
-                return 'ＯＮＥ　ＰＩＥＣＥ_映画関連_0'
+                return 'ＯＮＥＰＩＥＣＥ_映画関連_0'
             # ノベライズ
-            if 'ｎｏｖｅｌ' in title:
-                return 'ＯＮＥ　ＰＩＥＣＥ_novel_0'
+            if 'ｎｏｖｅｌ' in title_no_space:
+                return 'ＯＮＥＰＩＥＣＥ_novel_0'
             # 学園シリーズ
-            if '学園' in title:
+            if '学園' in title_no_space:
                 match = re.search(r'[０-９\d]+', title)
                 if match:
                     vol = match.group(0).translate(trans_table)
-                    return f'ＯＮＥ　ＰＩＥＣＥ_学園_{vol}'
-                return 'ＯＮＥ　ＰＩＥＣＥ_学園_0'
+                    return f'ＯＮＥＰＩＥＣＥ_学園_{vol}'
+                return 'ＯＮＥＰＩＥＣＥ_学園_0'
             # エピソードA
-            if 'ｅｐｉｓｏｄｅＡ' in title:
+            if 'ｅｐｉｓｏｄｅＡ' in title_no_space:
                 match = re.search(r'[０-９\d]+', title)
                 if match:
                     vol = match.group(0).translate(trans_table)
-                    return f'ＯＮＥ　ＰＩＥＣＥ_episodeA_{vol}'
-                return 'ＯＮＥ　ＰＩＥＣＥ_episodeA_0'
+                    return f'ＯＮＥＰＩＥＣＥ_episodeA_{vol}'
+                return 'ＯＮＥＰＩＥＣＥ_episodeA_0'
             # magazine
-            if 'ｍａｇａｚｉｎ' in title:
+            if 'ｍａｇａｚｉｎ' in title_no_space:
                 match = re.search(r'[０-９\d]+', title)
                 if match:
                     vol = match.group(0).translate(trans_table)
-                    return f'ＯＮＥ　ＰＩＥＣＥ_magazine_{vol}'
-                return 'ＯＮＥ　ＰＩＥＣＥ_magazine_0'
+                    return f'ＯＮＥＰＩＥＣＥ_magazine_{vol}'
+                return 'ＯＮＥＰＩＥＣＥ_magazine_0'
             # ヒロインズ、カードゲーム、ビブルカード、カレンダーなど
             if any(x in title for x in ['ヒロインズ', 'ＣＡＲＤ　ＧＡＭＥ', 'ビブルカード',
                                        'カレンダー', 'るるぶ', 'ＢＬＵＥ', 'ＲＡＩＮＢＯＷ',
                                        'ＷＨＩＴＥ', 'ＲＥＤ　ＧＲＡＮＤ', 'ＱＵＩＺ']):
-                return 'ＯＮＥ　ＰＩＥＣＥ_関連書籍_0'
+                return 'ＯＮＥＰＩＥＣＥ_関連書籍_0'
             # BOXシリーズ
-            if 'ＢＯＸ' in title:
-                return 'ＯＮＥ　ＰＩＥＣＥ_BOX_0'
+            if 'ＢＯＸ' in title_no_space:
+                return 'ＯＮＥＰＩＥＣＥ_BOX_0'
             # 本編
-            match = re.search(r'ＯＮＥ　ＰＩＥＣＥ　+([０-９\d]+)$', title)
+            match = re.search(r'ＯＮＥＰＩＥＣＥ　+([０-９\d]+)$', title)
             if match:
                 vol = match.group(1).translate(trans_table)
-                return f'ＯＮＥ　ＰＩＥＣＥ_original_{vol}'
-            return 'ＯＮＥ　ＰＩＥＣＥ_original_0'
+                return f'ＯＮＥＰＩＥＣＥ_original_{vol}'
+            return 'ＯＮＥＰＩＥＣＥ_original_0'
         # 5. 変な家
-        if title.startswith('変な家'):
-            if '文庫版' in title:
+        if title_no_space.startswith('変な家'):
+            if '文庫版' in title_no_space:
                 return '変な家_文庫版_0'
             match = re.search(r'変な家　+([０-９\d]+)', title)
             if match:
@@ -205,9 +205,9 @@ def normalize_title(df):
                 return f'変な家_original_{vol}'
             return '変な家_original_0'
         # 6. ブルーロック
-        if 'ブルーロック' in title:
+        if 'ブルーロック' in title_no_space:
             # スピンオフ: EPISODE凪
-            if 'ＥＰＩＳＯＤＥ' in title:
+            if 'ＥＰＩＳＯＤＥ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -221,7 +221,7 @@ def normalize_title(df):
                     return f'ブルーロック_小説EPISODE凪_{vol}'
                 return 'ブルーロック_小説EPISODE凪_0'
             # 小説
-            if title.startswith('小説'):
+            if title_no_space.startswith('小説'):
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -240,30 +240,30 @@ def normalize_title(df):
                 return f'ブルーロック_original_{vol}'
             return 'ブルーロック_original_0'
         # 7. 僕のヒーローアカデミア
-        if '僕のヒーローアカデミア' in title:
+        if '僕のヒーローアカデミア' in title_no_space:
             # スピンオフ: ヴィジランテ
-            if 'ヴィジランテ' in title:
+            if 'ヴィジランテ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'僕のヒーローアカデミア_ヴィジランテ_{vol}'
                 return '僕のヒーローアカデミア_ヴィジランテ_0'
             # スピンオフ: すまっしゅ
-            if 'すまっしゅ' in title:
+            if 'すまっしゅ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'僕のヒーローアカデミア_すまっしゅ_{vol}'
                 return '僕のヒーローアカデミア_すまっしゅ_0'
             # スピンオフ: チームアップ
-            if 'チームアップ' in title:
+            if 'チームアップ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'僕のヒーローアカデミア_チームアップ_{vol}'
                 return '僕のヒーローアカデミア_チームアップ_0'
             # スピンオフ: 雄英白書
-            if '雄英白書' in title:
+            if '雄英白書' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -279,9 +279,9 @@ def normalize_title(df):
                 return f'僕のヒーローアカデミア_original_{vol}'
             return '僕のヒーローアカデミア_original_0'
         # 8. 薬屋のひとりごと
-        if title.startswith('薬屋のひとりごと') or title.startswith('特装版　薬屋のひとりごと'):
+        if title_no_space.startswith('薬屋のひとりごと') or title_no_space.startswith('特装版　薬屋のひとりごと'):
             # 画集
-            if '画集' in title:
+            if '画集' in title_no_space:
                 return '薬屋のひとりごと_画集_0'
             # 特装版を除去
             title = re.sub(r'^特装版　', '', title)
@@ -306,8 +306,22 @@ def normalize_title(df):
                 vol = match.group(1).translate(trans_table)
                 return f'薬屋のひとりごと_original_{vol}'
             return '薬屋のひとりごと_original_0'
-        # 9. ＳＰＹ×ＦＡＭＩＬＹ
-        if 'ＳＰＹ×ＦＡＭＩＬＹ' in title:
+
+        # 9. ＳＡＫＡＭＯＴＯＤＡＹＳ
+        if 'ＳＡＫＡＭＯＴＯＤＡＹＳ' in title_no_space:
+            # 関連書籍
+            if '殺し屋のメソ' in title_no_space or '殺し屋ブルー' in title_no_space or 'カレンダー' in title_no_space:
+                return 'ＳＡＫＡＭＯＴＯＤＡＹＳ_関連書籍_0'
+
+            # 巻数を抽出（title_no_spaceの末尾から）
+            volume_match = re.search(r'([０-９\d]+)$', title_no_space)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'ＳＡＫＡＭＯＴＯＤＡＹＳ_original_{volume}'
+            return 'ＳＡＫＡＭＯＴＯＤＡＹＳ_original_0'
+
+        # 10. ＳＰＹ×ＦＡＭＩＬＹ
+        if 'ＳＰＹ×ＦＡＭＩＬＹ' in title_no_space:
             # 関連書籍
             if any(x in title for x in ['まんがノベライ', 'アニメーション', 'オペレーション', '家族の肖像',
                                         'フォージャー家', '公式ファンブック', 'ＴＶアニメ', 'カレンダー', '劇場版']):
@@ -320,15 +334,15 @@ def normalize_title(df):
                 vol = match.group(1).translate(trans_table)
                 return f'ＳＰＹ×ＦＡＭＩＬＹ_original_{vol}'
             return 'ＳＰＹ×ＦＡＭＩＬＹ_original_0'
-        # 10. キングダム
-        if 'キングダム' in title:
+        # 11. キングダム
+        if 'キングダム' in title_no_space:
             # 除外: 別作品
             exclude_keywords = ['ツキウタ', 'オレ様', 'アニア', '恐竜', '餃子', '迷宮',
                                'サキュバス', 'ラビッツ', '冒険大陸', 'アニマル']
             if any(x in title for x in exclude_keywords):
-                return original_title
+                return original_title.replace(' ', '').replace('　', '')
             # 完全版
-            if '完全版' in title:
+            if '完全版' in title_no_space:
                 match = re.search(r'[０-９\d]+', title)
                 if match:
                     vol = match.group(0).translate(trans_table)
@@ -341,18 +355,18 @@ def normalize_title(df):
             if any(x in title for x in ['公式ガイド', '公式問題集', '英雄風雲録', '水晶玉子', 'ビジュアル', '英傑列紀']):
                 return 'キングダム_関連書籍_0'
             # 本編（"キングダム　"で厳密にマッチング）
-            if title.startswith('キングダム　'):
+            if title_no_space.startswith('キングダム　'):
                 match = re.search(r'キングダム　+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'キングダム_original_{vol}'
             return 'キングダム_original_0'
         # 11. 【推しの子】
-        if '【推しの子】' in title:
+        if '【推しの子】' in title_no_space:
             # スピンオフ
-            if '一番星のスピカ' in title:
+            if '一番星のスピカ' in title_no_space:
                 return '【推しの子】_一番星のスピカ_0'
-            if '二人のエチュード' in title:
+            if '二人のエチュード' in title_no_space:
                 return '【推しの子】_二人のエチュード_0'
             # 関連書籍
             if any(x in title for x in ['まんがノベライズ', 'カラーリング', 'イラスト集', '公式ガイ',
@@ -367,23 +381,23 @@ def normalize_title(df):
                 return f'【推しの子】_original_{vol}'
             return '【推しの子】_original_0'
         # 12. カグラバチ
-        if 'カグラバチ' in title:
+        if 'カグラバチ' in title_no_space:
             match = re.search(r'カグラバチ　+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'カグラバチ_original_{vol}'
             return 'カグラバチ_original_0'
         # 13. 転生したらスライムだった件
-        if '転生したらスライムだった件' in title:
+        if '転生したらスライムだった件' in title_no_space:
             # スピンオフ: 転ちゅら
-            if '転ちゅら' in title:
+            if '転ちゅら' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'転生したらスライムだった件_転ちゅら_{vol}'
                 return '転生したらスライムだった件_転ちゅら_0'
             # スピンオフ: クレイマ
-            if 'クレイマ' in title:
+            if 'クレイマ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -397,21 +411,21 @@ def normalize_title(df):
                     return f'転生したらスライムだった件_異聞魔国_{vol}'
                 return '転生したらスライムだった件_異聞魔国_0'
             # スピンオフ: ～魔物の国
-            if '～魔物の国' in title:
+            if '～魔物の国' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'転生したらスライムだった件_魔物の国_{vol}'
                 return '転生したらスライムだった件_魔物の国_0'
             # スピンオフ: 美食伝
-            if '美食伝' in title:
+            if '美食伝' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'転生したらスライムだった件_美食伝_{vol}'
                 return '転生したらスライムだった件_美食伝_0'
             # スピンオフ: 番外編
-            if '番外編' in title:
+            if '番外編' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -429,7 +443,7 @@ def normalize_title(df):
                 part = match.group(2)
                 return f'転生したらスライムだった件_original_{vol}{part}'
             # 全３巻セット等
-            if '全３巻' in title:
+            if '全３巻' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -441,9 +455,9 @@ def normalize_title(df):
                 return f'転生したらスライムだった件_original_{vol}'
             return '転生したらスライムだった件_original_0'
         # 14. ダンダダン
-        if 'ダンダダン' in title:
+        if 'ダンダダン' in title_no_space:
             # 関連書籍
-            if '超常現象解体新書' in title:
+            if '超常現象解体新書' in title_no_space:
                 return 'ダンダダン_関連書籍_0'
             # 本編
             match = re.search(r'ダンダダン　+([０-９\d]+)', title)
@@ -452,7 +466,7 @@ def normalize_title(df):
                 return f'ダンダダン_original_{vol}'
             return 'ダンダダン_original_0'
         # 15. チェンソーマン
-        if 'チェンソーマン' in title:
+        if 'チェンソーマン' in title_no_space:
             # 関連書籍
             if any(x in title for x in ['バディ・ストーリーズ', 'ＴＶアニメ']):
                 return 'チェンソーマン_関連書籍_0'
@@ -462,9 +476,9 @@ def normalize_title(df):
                 return f'チェンソーマン_original_{vol}'
             return 'チェンソーマン_original_0'
         # 16. アオのハコ
-        if 'アオのハコ' in title:
+        if 'アオのハコ' in title_no_space:
             # Prologue
-            if 'Ｐｒｏｌｏｇｕｅ' in title:
+            if 'Ｐｒｏｌｏｇｕｅ' in title_no_space:
                 return 'アオのハコ_Prologue_0'
             # 本編
             match = re.search(r'アオのハコ　+([０-９\d]+)', title)
@@ -473,7 +487,7 @@ def normalize_title(df):
                 return f'アオのハコ_original_{vol}'
             return 'アオのハコ_original_0'
         # 17. 名探偵コナン
-        if '名探偵コナン' in title:
+        if '名探偵コナン' in title_no_space:
             # 本編
             match = re.search(r'名探偵コナン　+([０-９\d]+)', title)
             if match:
@@ -482,7 +496,7 @@ def normalize_title(df):
             # その他は全て関連
             return '名探偵コナン_関連書籍_0'
         # 18. ワンパンマン
-        if 'ワンパンマン' in title:
+        if 'ワンパンマン' in title_no_space:
             match = re.search(r'ワンパンマン　+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
@@ -491,7 +505,7 @@ def normalize_title(df):
         # 19. 地縛少年花子くん
         if '地縛少年花子くん' in title or '地縛少年　花子くん' in title:
             # 画集
-            if '画集' in title:
+            if '画集' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -503,38 +517,38 @@ def normalize_title(df):
                 return f'地縛少年花子くん_original_{vol}'
             return '地縛少年花子くん_original_0'
         # 20. マッシュル
-        if 'マッシュル' in title:
+        if 'マッシュル' in title_no_space:
             match = re.search(r'マッシュル[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'マッシュル_original_{vol}'
             return 'マッシュル_original_0'
-        # 21. ＳＡＫＡＭＯＴＯ　ＤＡＹＳ
-        if 'ＳＡＫＡＭＯＴＯ　ＤＡＹＳ' in title:
+        # 21. ＳＡＫＡＭＯＴＯＤＡＹＳ
+        if 'ＳＡＫＡＭＯＴＯＤＡＹＳ' in title_no_space:
             # 関連書籍
             if any(x in title for x in ['殺し屋のメソ', '殺し屋ブルー']):
-                return 'ＳＡＫＡＭＯＴＯ　ＤＡＹＳ_関連書籍_0'
+                return 'ＳＡＫＡＭＯＴＯＤＡＹＳ_関連書籍_0'
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
-                return f'ＳＡＫＡＭＯＴＯ　ＤＡＹＳ_original_{vol}'
-            return 'ＳＡＫＡＭＯＴＯ　ＤＡＹＳ_original_0'
+                return f'ＳＡＫＡＭＯＴＯＤＡＹＳ_original_{vol}'
+            return 'ＳＡＫＡＭＯＴＯＤＡＹＳ_original_0'
         # 22. ＨＵＮＴＥＲ×ＨＵＮＴＥＲ
-        if 'ＨＵＮＴＥＲ×ＨＵＮＴＥＲ' in title:
+        if 'ＨＵＮＴＥＲ×ＨＵＮＴＥＲ' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'ＨＵＮＴＥＲ×ＨＵＮＴＥＲ_original_{vol}'
             return 'ＨＵＮＴＥＲ×ＨＵＮＴＥＲ_original_0'
         # 23. 逃げ上手の若君
-        if '逃げ上手の若君' in title:
+        if '逃げ上手の若君' in title_no_space:
             match = re.search(r'逃げ上手の若君　+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'逃げ上手の若君_original_{vol}'
             return '逃げ上手の若君_original_0'
         # 24. 夜桜さんちの大作戦
-        if '夜桜さんちの大作戦' in title:
+        if '夜桜さんちの大作戦' in title_no_space:
             # 関連書籍
             if any(x in title for x in ['おるすばん', '観察日記']):
                 return '夜桜さんちの大作戦_関連書籍_0'
@@ -546,28 +560,28 @@ def normalize_title(df):
         # 25. アオアシ
         if 'アオアシ' in title and 'アオのハコ' not in title:
             # ジュニア版
-            if 'ジュニア版' in title:
+            if 'ジュニア版' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'アオアシ_ジュニア版_{vol}'
                 return 'アオアシ_ジュニア版_0'
             # スピンオフ: ブラザーフット
-            if 'ブラザーフット' in title:
+            if 'ブラザーフット' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'アオアシ_ブラザーフット_{vol}'
                 return 'アオアシ_ブラザーフット_0'
             # 小説
-            if title.startswith('小説'):
+            if title_no_space.startswith('小説'):
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'アオアシ_小説_{vol}'
                 return 'アオアシ_小説_0'
             # 関連書籍
-            if 'に学ぶ' in title:
+            if 'に学ぶ' in title_no_space:
                 return 'アオアシ_関連書籍_0'
             # 本編
             match = re.search(r'アオアシ　+([０-９\d]+)', title)
@@ -576,14 +590,14 @@ def normalize_title(df):
                 return f'アオアシ_original_{vol}'
             return 'アオアシ_original_0'
         # 26. つかめ！理科ダマン
-        if 'つかめ！理科ダマン' in title:
+        if 'つかめ！理科ダマン' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'つかめ！理科ダマン_original_{vol}'
             return 'つかめ！理科ダマン_original_0'
         # 27. ゴールデンカムイ
-        if 'ゴールデンカムイ' in title:
+        if 'ゴールデンカムイ' in title_no_space:
             # 関連書籍
             if any(x in title for x in ['アイヌ文化', '絵から学ぶ', '公式フ', '映画']):
                 return 'ゴールデンカムイ_関連書籍_0'
@@ -594,16 +608,16 @@ def normalize_title(df):
                 return f'ゴールデンカムイ_original_{vol}'
             return 'ゴールデンカムイ_original_0'
         # 28. 忘却バッテリー
-        if '忘却バッテリー' in title:
+        if '忘却バッテリー' in title_no_space:
             match = re.search(r'忘却バッテリー　+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'忘却バッテリー_original_{vol}'
             return '忘却バッテリー_original_0'
         # 29. シャングリラ・フロンティア
-        if 'シャングリラ・フロンティア' in title:
+        if 'シャングリラ・フロンティア' in title_no_space:
             # 関連書籍
-            if 'るるぶ' in title:
+            if 'るるぶ' in title_no_space:
                 return 'シャングリラ・フロンティア_関連書籍_0'
             # 特装版・限定版を除去
             title = re.sub(r'　+(特装版|限定版)$', '', title)
@@ -621,28 +635,28 @@ def normalize_title(df):
                 return f'シャングリラ・フロンティア_original_{vol}'
             return 'シャングリラ・フロンティア_original_0'
         # 30. 時々ボソッとロシア語でデレる隣のアー
-        if '時々ボソッとロシア語でデレる隣のアー' in title:
+        if '時々ボソッとロシア語でデレる隣のアー' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'時々ボソッとロシア語でデレる隣のアーリャさん_original_{vol}'
             return '時々ボソッとロシア語でデレる隣のアーリャさん_original_0'
         # 31. 大ピンチずかん
-        if '大ピンチずかん' in title:
+        if '大ピンチずかん' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'大ピンチずかん_original_{vol}'
             return '大ピンチずかん_original_0'
         # 32. 僕の心のヤバイやつ
-        if '僕の心のヤバイやつ' in title:
+        if '僕の心のヤバイやつ' in title_no_space:
             # 特装版を除去
             title = re.sub(r'^特装版　', '', title)
             # 小説
-            if title.startswith('小説'):
+            if title_no_space.startswith('小説'):
                 return '僕の心のヤバイやつ_小説_0'
             # 関連書籍
-            if 'ＴＶアニメ' in title:
+            if 'ＴＶアニメ' in title_no_space:
                 return '僕の心のヤバイやつ_関連書籍_0'
             match = re.search(r'僕の心のヤバイやつ　+([０-９\d]+)', title)
             if match:
@@ -650,7 +664,7 @@ def normalize_title(df):
                 return f'僕の心のヤバイやつ_original_{vol}'
             return '僕の心のヤバイやつ_original_0'
         # 33. ダンジョン飯
-        if 'ダンジョン飯' in title:
+        if 'ダンジョン飯' in title_no_space:
             # 関連書籍
             if any(x in title for x in ['ワールドガイド', '冒険者バイ', '英会話', 'Ｗａｌｋｅｒ']):
                 return 'ダンジョン飯_関連書籍_0'
@@ -660,34 +674,34 @@ def normalize_title(df):
                 vol = match.group(1).translate(trans_table)
                 return f'ダンジョン飯_original_{vol}'
             return 'ダンジョン飯_original_0'
-        # 34. ＷＩＮＤ　ＢＲＥＡＫＥＲ
-        if 'ＷＩＮＤ　ＢＲＥＡＫＥＲ' in title:
+        # 34. ＷＩＮＤＢＲＥＡＫＥＲ
+        if 'ＷＩＮＤＢＲＥＡＫＥＲ' in title_no_space:
             # 関連書籍
-            if '公式キャラクタ' in title:
-                return 'ＷＩＮＤ　ＢＲＥＡＫＥＲ_関連書籍_0'
+            if '公式キャラクタ' in title_no_space:
+                return 'ＷＩＮＤＢＲＥＡＫＥＲ_関連書籍_0'
             # 本編
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
-                return f'ＷＩＮＤ　ＢＲＥＡＫＥＲ_original_{vol}'
-            return 'ＷＩＮＤ　ＢＲＥＡＫＥＲ_original_0'
+                return f'ＷＩＮＤＢＲＥＡＫＥＲ_original_{vol}'
+            return 'ＷＩＮＤＢＲＥＡＫＥＲ_original_0'
         # 35. 魔入りました
-        if '魔入りました' in title:
+        if '魔入りました' in title_no_space:
             # 小説
-            if title.startswith('小説'):
+            if title_no_space.startswith('小説'):
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'魔入りました_小説_{vol}'
                 return '魔入りました_小説_0'
             # スピンオフ
-            if 'ｉｆ　Ｅｐｉ' in title:
+            if 'ｉｆＥｐｉ' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'魔入りました_ifEpi_{vol}'
                 return '魔入りました_ifEpi_0'
-            if '外伝' in title:
+            if '外伝' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -703,23 +717,23 @@ def normalize_title(df):
                 return f'魔入りました_original_{vol}'
             return '魔入りました_original_0'
         # 36. ハイキュー
-        if 'ハイキュー' in title:
+        if 'ハイキュー' in title_no_space:
             # スピンオフ: れっつ！ハイキュー！？
-            if 'れっつ！ハイキュー！？' in title:
+            if 'れっつ！ハイキュー！？' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'ハイキュー_れっつ_{vol}'
                 return 'ハイキュー_れっつ_0'
             # スピンオフ: ハイキュー部！！
-            if 'ハイキュー部！！' in title:
+            if 'ハイキュー部！！' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'ハイキュー_ハイキュー部_{vol}'
                 return 'ハイキュー_ハイキュー部_0'
             # 小説版
-            if 'ショーセツバン' in title:
+            if 'ショーセツバン' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -737,7 +751,7 @@ def normalize_title(df):
                 return f'ハイキュー_original_{vol}'
             return 'ハイキュー_original_0'
         # 37. 黄泉のツガイ
-        if '黄泉のツガイ' in title:
+        if '黄泉のツガイ' in title_no_space:
             # 特装版を除去
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'黄泉のツガイ　+([０-９\d]+)', title)
@@ -746,7 +760,7 @@ def normalize_title(df):
                 return f'黄泉のツガイ_original_{vol}'
             return '黄泉のツガイ_original_0'
         # 38. 終末のワルキューレ
-        if '終末のワルキューレ' in title:
+        if '終末のワルキューレ' in title_no_space:
             # スピンオフ: 奇譚　ジャック・ザ
             if '奇譚' in title and 'ジャック' in title:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
@@ -755,14 +769,14 @@ def normalize_title(df):
                     return f'終末のワルキューレ_奇譚ジャックザ_{vol}'
                 return '終末のワルキューレ_奇譚ジャックザ_0'
             # スピンオフ: 禁伝　神々の黙示録
-            if '禁伝' in title:
+            if '禁伝' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'終末のワルキューレ_禁伝_{vol}'
                 return '終末のワルキューレ_禁伝_0'
             # スピンオフ: 異聞　呂布奉先飛将
-            if '異聞' in title:
+            if '異聞' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -778,7 +792,7 @@ def normalize_title(df):
                 return f'終末のワルキューレ_original_{vol}'
             return '終末のワルキューレ_original_0'
         # 39. ちいかわ
-        if 'ちいかわ' in title:
+        if 'ちいかわ' in title_no_space:
             # 本編: なんか小さくてかわいいやつ
             if 'なんか小さくてかわいいやつ' in title or 'なんか小さくてかわ' in title:
                 # 特装版を除去
@@ -792,7 +806,7 @@ def normalize_title(df):
             # その他は全て関連書籍
             return 'ちいかわ_関連書籍_0'
         # 40. 光が死んだ夏
-        if '光が死んだ夏' in title:
+        if '光が死んだ夏' in title_no_space:
             # 特装版を除去
             title = re.sub(r'　+特装版$', '', title)
             match = re.search(r'光が死んだ夏　+([０-９\d]+)', title)
@@ -801,21 +815,21 @@ def normalize_title(df):
                 return f'光が死んだ夏_original_{vol}'
             return '光が死んだ夏_original_0'
         # 41. 助太刀稼業
-        if '助太刀稼業' in title:
+        if '助太刀稼業' in title_no_space:
             match = re.search(r'助太刀稼業　+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'助太刀稼業_original_{vol}'
             return '助太刀稼業_original_0'
         # 42. 金色のガッシュ！！２
-        if '金色のガッシュ！！２' in title:
+        if '金色のガッシュ！！２' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'金色のガッシュ２_original_{vol}'
             return '金色のガッシュ２_original_0'
         # 43. スーパーの裏でヤニ吸うふたり
-        if 'スーパーの裏でヤニ吸うふたり' in title:
+        if 'スーパーの裏でヤニ吸うふたり' in title_no_space:
             # 特装版を除去
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[　\s]+([０-９\d]+)', title)
@@ -824,9 +838,9 @@ def normalize_title(df):
                 return f'スーパーの裏でヤニ吸うふたり_original_{vol}'
             return 'スーパーの裏でヤニ吸うふたり_original_0'
         # 44. わたしの幸せな結婚
-        if 'わたしの幸せな結婚' in title:
+        if 'わたしの幸せな結婚' in title_no_space:
             # 画集
-            if '画集' in title:
+            if '画集' in title_no_space:
                 return 'わたしの幸せな結婚_画集_0'
             # 特装版・Blu-ray付を除去
             title = re.sub(r'^特装版　', '', title)
@@ -838,9 +852,9 @@ def normalize_title(df):
                 return f'わたしの幸せな結婚_original_{vol}'
             return 'わたしの幸せな結婚_original_0'
         # 45. その着せ替え人形は恋をする
-        if 'その着せ替え人形は恋をする' in title:
+        if 'その着せ替え人形は恋をする' in title_no_space:
             # TVアニメ関連
-            if 'ＴＶアニメ' in title:
+            if 'ＴＶアニメ' in title_no_space:
                 return 'その着せ替え人形は恋をする_関連書籍_0'
             # 特装版を除去
             title = re.sub(r'^特装版　', '', title)
@@ -851,21 +865,21 @@ def normalize_title(df):
                 return f'その着せ替え人形は恋をする_original_{vol}'
             return 'その着せ替え人形は恋をする_original_0'
         # 46. 片田舎のおっさん、剣聖になる
-        if '片田舎のおっさん、剣聖になる' in title:
+        if '片田舎のおっさん、剣聖になる' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'片田舎のおっさん、剣聖になる_original_{vol}'
             return '片田舎のおっさん、剣聖になる_original_0'
-        # 47. ＢＬＵＥ　ＧＩＡＮＴ　ＭＯＭＥＮＴＵ
-        if 'ＢＬＵＥ　ＧＩＡＮＴ　ＭＯＭＥＮＴＵ' in title:
+        # 47. ＢＬＵＥＧＩＡＮＴＭＯＭＥＮＴＵ
+        if 'ＢＬＵＥＧＩＡＮＴＭＯＭＥＮＴＵ' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
-                return f'ＢＬＵＥ　ＧＩＡＮＴ　ＭＯＭＥＮＴＵ_original_{vol}'
-            return 'ＢＬＵＥ　ＧＩＡＮＴ　ＭＯＭＥＮＴＵ_original_0'
+                return f'ＢＬＵＥＧＩＡＮＴＭＯＭＥＮＴＵ_original_{vol}'
+            return 'ＢＬＵＥＧＩＡＮＴＭＯＭＥＮＴＵ_original_0'
         # 48. 香君
-        if '香君' in title:
+        if '香君' in title_no_space:
             # 小説版（上下）
             if '上' in title or '下' in title:
                 return '香君_小説_0'
@@ -876,37 +890,37 @@ def normalize_title(df):
                 return f'香君_original_{vol}'
             return '香君_original_0'
         # 49. 春の嵐とモンスター
-        if '春の嵐とモンスター' in title:
+        if '春の嵐とモンスター' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'春の嵐とモンスター_original_{vol}'
             return '春の嵐とモンスター_original_0'
         # 50. 恋せよまやかし天使ども
-        if '恋せよまやかし天使ども' in title:
+        if '恋せよまやかし天使ども' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'恋せよまやかし天使ども_original_{vol}'
             return '恋せよまやかし天使ども_original_0'
         # 51. ファントムバスターズ
-        if 'ファントムバスターズ' in title:
+        if 'ファントムバスターズ' in title_no_space:
             match = re.search(r'[　\s]+([０-９\d]+)', title)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'ファントムバスターズ_original_{vol}'
             return 'ファントムバスターズ_original_0'
         # 52. 鬼の花嫁
-        if '鬼の花嫁' in title:
+        if '鬼の花嫁' in title_no_space:
             # スピンオフ: は喰べられたい
-            if '喰べられたい' in title:
+            if '喰べられたい' in title_no_space:
                 match = re.search(r'[　\s]+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
                     return f'鬼の花嫁_喰べられたい_{vol}'
                 return '鬼の花嫁_喰べられたい_0'
             # サブシリーズ: 新婚編
-            if '新婚編' in title:
+            if '新婚編' in title_no_space:
                 match = re.search(r'新婚編　+([０-９\d]+)', title)
                 if match:
                     vol = match.group(1).translate(trans_table)
@@ -924,7 +938,7 @@ def normalize_title(df):
                 return f'鬼の花嫁_original_{vol}'
             return '鬼の花嫁_original_0'
         # 53. チ。－地球の運動について－
-        if 'チ。－地球の運動について－' in title:
+        if 'チ。－地球の運動について－' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -932,7 +946,7 @@ def normalize_title(df):
                 return f'チ。－地球の運動について－_original_{vol}'
             return 'チ。－地球の運動について－_original_0'
         # 54. ドラゴンボール超
-        if 'ドラゴンボール超' in title:
+        if 'ドラゴンボール超' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -940,7 +954,7 @@ def normalize_title(df):
                 return f'ドラゴンボール超_original_{vol}'
             return 'ドラゴンボール超_original_0'
         # 55. Ｄｒ．ＳＴＯＮＥ
-        if 'Ｄｒ．ＳＴＯＮＥ' in title:
+        if 'Ｄｒ．ＳＴＯＮＥ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -948,7 +962,7 @@ def normalize_title(df):
                 return f'Ｄｒ．ＳＴＯＮＥ_original_{vol}'
             return 'Ｄｒ．ＳＴＯＮＥ_original_0'
         # 56. 古見さんは、コミュ症です。
-        if '古見さんは、コミュ症です。' in title:
+        if '古見さんは、コミュ症です。' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -956,7 +970,7 @@ def normalize_title(df):
                 return f'古見さんは、コミュ症です。_original_{vol}'
             return '古見さんは、コミュ症です。_original_0'
         # 57. 幼稚園ＷＡＲＳ
-        if '幼稚園ＷＡＲＳ' in title:
+        if '幼稚園ＷＡＲＳ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -964,7 +978,7 @@ def normalize_title(df):
                 return f'幼稚園ＷＡＲＳ_original_{vol}'
             return '幼稚園ＷＡＲＳ_original_0'
         # 58. 魔界の主役は我々だ！
-        if '魔界の主役は我々だ！' in title:
+        if '魔界の主役は我々だ！' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -972,7 +986,7 @@ def normalize_title(df):
                 return f'魔界の主役は我々だ！_original_{vol}'
             return '魔界の主役は我々だ！_original_0'
         # 59. ミステリと言う勿れ
-        if 'ミステリと言う勿れ' in title:
+        if 'ミステリと言う勿れ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -980,23 +994,23 @@ def normalize_title(df):
                 return f'ミステリと言う勿れ_original_{vol}'
             return 'ミステリと言う勿れ_original_0'
         # 60. ワールドトリガー
-        if 'ワールドトリガー' in title:
+        if 'ワールドトリガー' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'ワールドトリガー_original_{vol}'
             return 'ワールドトリガー_original_0'
-        # 61. ＤＲＡＧＯＮ　ＢＡＬＬ
-        if 'ＤＲＡＧＯＮ　ＢＡＬＬ' in title:
+        # 61. ＤＲＡＧＯＮＢＡＬＬ
+        if 'ＤＲＡＧＯＮＢＡＬＬ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'ＤＲＡＧＯＮ　ＢＡＬＬ_original_{vol}'
-            return 'ＤＲＡＧＯＮ　ＢＡＬＬ_original_0'
+                return f'ＤＲＡＧＯＮＢＡＬＬ_original_{vol}'
+            return 'ＤＲＡＧＯＮＢＡＬＬ_original_0'
         # 62. ＭＦゴースト
-        if 'ＭＦゴースト' in title:
+        if 'ＭＦゴースト' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1004,7 +1018,7 @@ def normalize_title(df):
                 return f'ＭＦゴースト_original_{vol}'
             return 'ＭＦゴースト_original_0'
         # 63. 氷の城壁
-        if '氷の城壁' in title:
+        if '氷の城壁' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1012,7 +1026,7 @@ def normalize_title(df):
                 return f'氷の城壁_original_{vol}'
             return '氷の城壁_original_0'
         # 64. よふかしのうた
-        if 'よふかしのうた' in title:
+        if 'よふかしのうた' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1020,7 +1034,7 @@ def normalize_title(df):
                 return f'よふかしのうた_original_{vol}'
             return 'よふかしのうた_original_0'
         # 65. 黙示録の四騎士
-        if '黙示録の四騎士' in title:
+        if '黙示録の四騎士' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1028,7 +1042,7 @@ def normalize_title(df):
                 return f'黙示録の四騎士_original_{vol}'
             return '黙示録の四騎士_original_0'
         # 66. ダイヤモンドの功罪
-        if 'ダイヤモンドの功罪' in title:
+        if 'ダイヤモンドの功罪' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1036,7 +1050,7 @@ def normalize_title(df):
                 return f'ダイヤモンドの功罪_original_{vol}'
             return 'ダイヤモンドの功罪_original_0'
         # 67. ハニーレモンソーダ
-        if 'ハニーレモンソーダ' in title:
+        if 'ハニーレモンソーダ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1044,23 +1058,23 @@ def normalize_title(df):
                 return f'ハニーレモンソーダ_original_{vol}'
             return 'ハニーレモンソーダ_original_0'
         # 68. ゆびさきと恋々
-        if 'ゆびさきと恋々' in title:
+        if 'ゆびさきと恋々' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'ゆびさきと恋々_original_{vol}'
             return 'ゆびさきと恋々_original_0'
-        # 69. ウマ娘　シンデレラグレイ
-        if 'ウマ娘　シンデレラグレイ' in title:
+        # 69. ウマ娘シンデレラグレイ
+        if 'ウマ娘シンデレラグレイ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'ウマ娘　シンデレラグレイ_original_{vol}'
-            return 'ウマ娘　シンデレラグレイ_original_0'
+                return f'ウマ娘シンデレラグレイ_original_{vol}'
+            return 'ウマ娘シンデレラグレイ_original_0'
         # 70. 山田くんとＬｖ９９９の恋をする
-        if '山田くんとＬｖ９９９の恋をする' in title:
+        if '山田くんとＬｖ９９９の恋をする' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1068,7 +1082,7 @@ def normalize_title(df):
                 return f'山田くんとＬｖ９９９の恋をする_original_{vol}'
             return '山田くんとＬｖ９９９の恋をする_original_0'
         # 71. 進撃の巨人
-        if '進撃の巨人' in title:
+        if '進撃の巨人' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1076,7 +1090,7 @@ def normalize_title(df):
                 return f'進撃の巨人_original_{vol}'
             return '進撃の巨人_original_0'
         # 72. あかね噺
-        if 'あかね噺' in title:
+        if 'あかね噺' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1084,7 +1098,7 @@ def normalize_title(df):
                 return f'あかね噺_original_{vol}'
             return 'あかね噺_original_0'
         # 73. ブルーピリオド
-        if 'ブルーピリオド' in title:
+        if 'ブルーピリオド' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1092,7 +1106,7 @@ def normalize_title(df):
                 return f'ブルーピリオド_original_{vol}'
             return 'ブルーピリオド_original_0'
         # 74. 初×婚
-        if '初×婚' in title:
+        if '初×婚' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1100,7 +1114,7 @@ def normalize_title(df):
                 return f'初×婚_original_{vol}'
             return '初×婚_original_0'
         # 75. はたらく細胞
-        if 'はたらく細胞' in title:
+        if 'はたらく細胞' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1108,7 +1122,7 @@ def normalize_title(df):
                 return f'はたらく細胞_original_{vol}'
             return 'はたらく細胞_original_0'
         # 76. 文豪ストレイドッグス
-        if '文豪ストレイドッグス' in title:
+        if '文豪ストレイドッグス' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1116,7 +1130,7 @@ def normalize_title(df):
                 return f'文豪ストレイドッグス_original_{vol}'
             return '文豪ストレイドッグス_original_0'
         # 77. まんがで！にゃんこ大戦争
-        if 'まんがで！にゃんこ大戦争' in title:
+        if 'まんがで！にゃんこ大戦争' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1124,7 +1138,7 @@ def normalize_title(df):
                 return f'まんがで！にゃんこ大戦争_original_{vol}'
             return 'まんがで！にゃんこ大戦争_original_0'
         # 78. ホタルの嫁入り
-        if 'ホタルの嫁入り' in title:
+        if 'ホタルの嫁入り' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1132,7 +1146,7 @@ def normalize_title(df):
                 return f'ホタルの嫁入り_original_{vol}'
             return 'ホタルの嫁入り_original_0'
         # 79. うるわしの宵の月
-        if 'うるわしの宵の月' in title:
+        if 'うるわしの宵の月' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1140,7 +1154,7 @@ def normalize_title(df):
                 return f'うるわしの宵の月_original_{vol}'
             return 'うるわしの宵の月_original_0'
         # 80. 魔都精兵のスレイブ
-        if '魔都精兵のスレイブ' in title:
+        if '魔都精兵のスレイブ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1148,7 +1162,7 @@ def normalize_title(df):
                 return f'魔都精兵のスレイブ_original_{vol}'
             return '魔都精兵のスレイブ_original_0'
         # 81. 東京卍リベンジャーズ
-        if '東京卍リベンジャーズ' in title:
+        if '東京卍リベンジャーズ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1156,31 +1170,32 @@ def normalize_title(df):
                 return f'東京卍リベンジャーズ_original_{vol}'
             return '東京卍リベンジャーズ_original_0'
         # 82. 平和の国の島崎へ
-        if '平和の国の島崎へ' in title:
+        if '平和の国の島崎へ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'平和の国の島崎へ_original_{vol}'
             return '平和の国の島崎へ_original_0'
-        # 83. キメツ学園！
-        if 'キメツ学園！' in title:
-            title = re.sub(r'^特装版　', '', title)
+        # 83. 男はつらいよＤＶＤコレクション
+        if '男はつらいよＤＶＤ' in title_no_space:
+            # 創刊号
+            if '創刊' in title_no_space:
+                return '男はつらいよＤＶＤコレクション_全国版_創刊'
+            # コード変更パターン
+            if 'コード変更' in title_no_space:
+                match = re.search(r'([０-９\d]+)', title)
+                if match:
+                    vol = match.group(1).translate(trans_table)
+                    return f'男はつらいよＤＶＤコレクション_全国版_{vol}'
+            # 通常パターン
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'キメツ学園！_original_{vol}'
-            return 'キメツ学園！_original_0'
-        # 84. 男はつらいよＤＶＤコレクション全国
-        if '男はつらいよＤＶＤコレクション全国' in title:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
-            if match:
-                vol = match.group(0).translate(trans_table)
-                return f'男はつらいよＤＶＤコレクション全国_original_{vol}'
-            return '男はつらいよＤＶＤコレクション全国_original_0'
+                return f'男はつらいよＤＶＤコレクション_全国版_{vol}'
+            return '男はつらいよＤＶＤコレクション_全国版_0'
         # 85. ラーメン赤猫
-        if 'ラーメン赤猫' in title:
+        if 'ラーメン赤猫' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1188,7 +1203,7 @@ def normalize_title(df):
                 return f'ラーメン赤猫_original_{vol}'
             return 'ラーメン赤猫_original_0'
         # 86. ウィッチウォッチ
-        if 'ウィッチウォッチ' in title:
+        if 'ウィッチウォッチ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1196,7 +1211,7 @@ def normalize_title(df):
                 return f'ウィッチウォッチ_original_{vol}'
             return 'ウィッチウォッチ_original_0'
         # 87. 超人Ｘ
-        if '超人Ｘ' in title:
+        if '超人Ｘ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1204,7 +1219,7 @@ def normalize_title(df):
                 return f'超人Ｘ_original_{vol}'
             return '超人Ｘ_original_0'
         # 88. アンデッドアンラック
-        if 'アンデッドアンラック' in title:
+        if 'アンデッドアンラック' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1212,7 +1227,7 @@ def normalize_title(df):
                 return f'アンデッドアンラック_original_{vol}'
             return 'アンデッドアンラック_original_0'
         # 89. 弱虫ペダル
-        if '弱虫ペダル' in title:
+        if '弱虫ペダル' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1220,7 +1235,7 @@ def normalize_title(df):
                 return f'弱虫ペダル_original_{vol}'
             return '弱虫ペダル_original_0'
         # 90. 彼女、お借りします
-        if '彼女、お借りします' in title:
+        if '彼女、お借りします' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1228,7 +1243,7 @@ def normalize_title(df):
                 return f'彼女、お借りします_original_{vol}'
             return '彼女、お借りします_original_0'
         # 91. 杖と剣のウィストリア
-        if '杖と剣のウィストリア' in title:
+        if '杖と剣のウィストリア' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1236,7 +1251,7 @@ def normalize_title(df):
                 return f'杖と剣のウィストリア_original_{vol}'
             return '杖と剣のウィストリア_original_0'
         # 92. ドラえもん
-        if 'ドラえもん' in title:
+        if 'ドラえもん' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1244,7 +1259,7 @@ def normalize_title(df):
                 return f'ドラえもん_original_{vol}'
             return 'ドラえもん_original_0'
         # 93. ２．５次元の誘惑
-        if '２．５次元の誘惑' in title:
+        if '２．５次元の誘惑' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1252,7 +1267,7 @@ def normalize_title(df):
                 return f'２．５次元の誘惑_original_{vol}'
             return '２．５次元の誘惑_original_0'
         # 94. 暁のヨナ
-        if '暁のヨナ' in title:
+        if '暁のヨナ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1260,7 +1275,7 @@ def normalize_title(df):
                 return f'暁のヨナ_original_{vol}'
             return '暁のヨナ_original_0'
         # 95. ピンクとハバネロ
-        if 'ピンクとハバネロ' in title:
+        if 'ピンクとハバネロ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1268,7 +1283,7 @@ def normalize_title(df):
                 return f'ピンクとハバネロ_original_{vol}'
             return 'ピンクとハバネロ_original_0'
         # 96. 女の園の星
-        if '女の園の星' in title:
+        if '女の園の星' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1276,7 +1291,7 @@ def normalize_title(df):
                 return f'女の園の星_original_{vol}'
             return '女の園の星_original_0'
         # 97. ぼっち・ざ・ろっく！
-        if 'ぼっち・ざ・ろっく！' in title:
+        if 'ぼっち・ざ・ろっく！' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1284,7 +1299,7 @@ def normalize_title(df):
                 return f'ぼっち・ざ・ろっく！_original_{vol}'
             return 'ぼっち・ざ・ろっく！_original_0'
         # 98. 九条の大罪
-        if '九条の大罪' in title:
+        if '九条の大罪' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1292,7 +1307,7 @@ def normalize_title(df):
                 return f'九条の大罪_original_{vol}'
             return '九条の大罪_original_0'
         # 99. 黒執事
-        if '黒執事' in title:
+        if '黒執事' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1300,7 +1315,7 @@ def normalize_title(df):
                 return f'黒執事_original_{vol}'
             return '黒執事_original_0'
         # 100. 魔法少女にあこがれて
-        if '魔法少女にあこがれて' in title:
+        if '魔法少女にあこがれて' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1308,7 +1323,7 @@ def normalize_title(df):
                 return f'魔法少女にあこがれて_original_{vol}'
             return '魔法少女にあこがれて_original_0'
         # 101. ゆるキャン△
-        if 'ゆるキャン△' in title:
+        if 'ゆるキャン△' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1316,7 +1331,7 @@ def normalize_title(df):
                 return f'ゆるキャン△_original_{vol}'
             return 'ゆるキャン△_original_0'
         # 102. 宇宙兄弟
-        if '宇宙兄弟' in title:
+        if '宇宙兄弟' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1324,7 +1339,7 @@ def normalize_title(df):
                 return f'宇宙兄弟_original_{vol}'
             return '宇宙兄弟_original_0'
         # 103. 桃源暗鬼
-        if '桃源暗鬼' in title:
+        if '桃源暗鬼' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1332,7 +1347,7 @@ def normalize_title(df):
                 return f'桃源暗鬼_original_{vol}'
             return '桃源暗鬼_original_0'
         # 104. 宝石の国
-        if '宝石の国' in title:
+        if '宝石の国' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1340,7 +1355,7 @@ def normalize_title(df):
                 return f'宝石の国_original_{vol}'
             return '宝石の国_original_0'
         # 105. 青の祓魔師
-        if '青の祓魔師' in title:
+        if '青の祓魔師' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1348,7 +1363,7 @@ def normalize_title(df):
                 return f'青の祓魔師_original_{vol}'
             return '青の祓魔師_original_0'
         # 106. 合コンに行ったら女がいなかった話
-        if '合コンに行ったら女がいなかった話' in title:
+        if '合コンに行ったら女がいなかった話' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1356,7 +1371,7 @@ def normalize_title(df):
                 return f'合コンに行ったら女がいなかった話_original_{vol}'
             return '合コンに行ったら女がいなかった話_original_0'
         # 107. スキップとローファー
-        if 'スキップとローファー' in title:
+        if 'スキップとローファー' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1364,7 +1379,7 @@ def normalize_title(df):
                 return f'スキップとローファー_original_{vol}'
             return 'スキップとローファー_original_0'
         # 108. デキる猫は今日も憂鬱
-        if 'デキる猫は今日も憂鬱' in title:
+        if 'デキる猫は今日も憂鬱' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1372,7 +1387,7 @@ def normalize_title(df):
                 return f'デキる猫は今日も憂鬱_original_{vol}'
             return 'デキる猫は今日も憂鬱_original_0'
         # 109. とんでもスキルで異世界放浪メシ
-        if 'とんでもスキルで異世界放浪メシ' in title:
+        if 'とんでもスキルで異世界放浪メシ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1380,7 +1395,7 @@ def normalize_title(df):
                 return f'とんでもスキルで異世界放浪メシ_original_{vol}'
             return 'とんでもスキルで異世界放浪メシ_original_0'
         # 110. 生徒会にも穴はある！
-        if '生徒会にも穴はある！' in title:
+        if '生徒会にも穴はある！' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1388,7 +1403,7 @@ def normalize_title(df):
                 return f'生徒会にも穴はある！_original_{vol}'
             return '生徒会にも穴はある！_original_0'
         # 111. 極楽街
-        if '極楽街' in title:
+        if '極楽街' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1396,7 +1411,7 @@ def normalize_title(df):
                 return f'極楽街_original_{vol}'
             return '極楽街_original_0'
         # 112. 夏目友人帳
-        if '夏目友人帳' in title:
+        if '夏目友人帳' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1404,39 +1419,39 @@ def normalize_title(df):
                 return f'夏目友人帳_original_{vol}'
             return '夏目友人帳_original_0'
         # 113. ぐらんぶる
-        if 'ぐらんぶる' in title:
+        if 'ぐらんぶる' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'ぐらんぶる_original_{vol}'
             return 'ぐらんぶる_original_0'
-        # 114. 新装版　動物のお医者さん
-        if '新装版　動物のお医者さん' in title:
+        # 114. 新装版動物のお医者さん
+        if '新装版動物のお医者さん' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'新装版　動物のお医者さん_original_{vol}'
-            return '新装版　動物のお医者さん_original_0'
+                return f'新装版動物のお医者さん_original_{vol}'
+            return '新装版動物のお医者さん_original_0'
         # 115. ふつうの軽音部
-        if 'ふつうの軽音部' in title:
+        if 'ふつうの軽音部' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'ふつうの軽音部_original_{vol}'
             return 'ふつうの軽音部_original_0'
-        # 116. ＧＩＡＮＴ　ＫＩＬＬＩＮＧ
-        if 'ＧＩＡＮＴ　ＫＩＬＬＩＮＧ' in title:
+        # 116. ＧＩＡＮＴＫＩＬＬＩＮＧ
+        if 'ＧＩＡＮＴＫＩＬＬＩＮＧ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'ＧＩＡＮＴ　ＫＩＬＬＩＮＧ_original_{vol}'
-            return 'ＧＩＡＮＴ　ＫＩＬＬＩＮＧ_original_0'
+                return f'ＧＩＡＮＴＫＩＬＬＩＮＧ_original_{vol}'
+            return 'ＧＩＡＮＴＫＩＬＬＩＮＧ_original_0'
         # 117. 四つ子ぐらし
-        if '四つ子ぐらし' in title:
+        if '四つ子ぐらし' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1444,7 +1459,7 @@ def normalize_title(df):
                 return f'四つ子ぐらし_original_{vol}'
             return '四つ子ぐらし_original_0'
         # 118. 月が導く異世界道中
-        if '月が導く異世界道中' in title:
+        if '月が導く異世界道中' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1452,7 +1467,7 @@ def normalize_title(df):
                 return f'月が導く異世界道中_original_{vol}'
             return '月が導く異世界道中_original_0'
         # 119. 墜落ＪＫと廃人教師
-        if '墜落ＪＫと廃人教師' in title:
+        if '墜落ＪＫと廃人教師' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1460,7 +1475,7 @@ def normalize_title(df):
                 return f'墜落ＪＫと廃人教師_original_{vol}'
             return '墜落ＪＫと廃人教師_original_0'
         # 120. きのう何食べた？
-        if 'きのう何食べた？' in title:
+        if 'きのう何食べた？' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1468,7 +1483,7 @@ def normalize_title(df):
                 return f'きのう何食べた？_original_{vol}'
             return 'きのう何食べた？_original_0'
         # 121. Ｒｅ：ゼロから始める異世界生活
-        if 'Ｒｅ：ゼロから始める異世界生活' in title:
+        if 'Ｒｅ：ゼロから始める異世界生活' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1476,7 +1491,7 @@ def normalize_title(df):
                 return f'Ｒｅ：ゼロから始める異世界生活_original_{vol}'
             return 'Ｒｅ：ゼロから始める異世界生活_original_0'
         # 122. ダークギャザリング
-        if 'ダークギャザリング' in title:
+        if 'ダークギャザリング' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1484,7 +1499,7 @@ def normalize_title(df):
                 return f'ダークギャザリング_original_{vol}'
             return 'ダークギャザリング_original_0'
         # 123. 東京エイリアンズ
-        if '東京エイリアンズ' in title:
+        if '東京エイリアンズ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1492,7 +1507,7 @@ def normalize_title(df):
                 return f'東京エイリアンズ_original_{vol}'
             return '東京エイリアンズ_original_0'
         # 124. カッコウの許嫁
-        if 'カッコウの許嫁' in title:
+        if 'カッコウの許嫁' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1500,7 +1515,7 @@ def normalize_title(df):
                 return f'カッコウの許嫁_original_{vol}'
             return 'カッコウの許嫁_original_0'
         # 125. 君と宇宙を歩くために
-        if '君と宇宙を歩くために' in title:
+        if '君と宇宙を歩くために' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1508,7 +1523,7 @@ def normalize_title(df):
                 return f'君と宇宙を歩くために_original_{vol}'
             return '君と宇宙を歩くために_original_0'
         # 126. 放課後ミステリクラブ
-        if '放課後ミステリクラブ' in title:
+        if '放課後ミステリクラブ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1516,23 +1531,15 @@ def normalize_title(df):
                 return f'放課後ミステリクラブ_original_{vol}'
             return '放課後ミステリクラブ_original_0'
         # 127. ザ・ファブル
-        if 'ザ・ファブル' in title:
+        if 'ザ・ファブル' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'ザ・ファブル_original_{vol}'
             return 'ザ・ファブル_original_0'
-        # 128. ようこそ実力至上主義の教室　２年生編
-        if 'ようこそ実力至上主義の教室　２年生編' in title:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
-            if match:
-                vol = match.group(0).translate(trans_table)
-                return f'ようこそ実力至上主義の教室　２年生編_original_{vol}'
-            return 'ようこそ実力至上主義の教室　２年生編_original_0'
-        # 129. キン肉マン
-        if 'キン肉マン' in title:
+        # 128. キン肉マン
+        if 'キン肉マン' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1540,7 +1547,7 @@ def normalize_title(df):
                 return f'キン肉マン_original_{vol}'
             return 'キン肉マン_original_0'
         # 130. お隣の天使様にいつの間にか駄目人間に
-        if 'お隣の天使様にいつの間にか駄目人間に' in title:
+        if 'お隣の天使様にいつの間にか駄目人間に' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1548,7 +1555,7 @@ def normalize_title(df):
                 return f'お隣の天使様にいつの間にか駄目人間に_original_{vol}'
             return 'お隣の天使様にいつの間にか駄目人間に_original_0'
         # 131. 転生したら第七王子だったので、気ま
-        if '転生したら第七王子だったので、気ま' in title:
+        if '転生したら第七王子だったので、気ま' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1556,7 +1563,7 @@ def normalize_title(df):
                 return f'転生したら第七王子だったので、気ま_original_{vol}'
             return '転生したら第七王子だったので、気ま_original_0'
         # 132. 正反対な君と僕
-        if '正反対な君と僕' in title:
+        if '正反対な君と僕' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1564,7 +1571,7 @@ def normalize_title(df):
                 return f'正反対な君と僕_original_{vol}'
             return '正反対な君と僕_original_0'
         # 133. 日常ロック
-        if '日常ロック' in title:
+        if '日常ロック' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1572,39 +1579,48 @@ def normalize_title(df):
                 return f'日常ロック_original_{vol}'
             return '日常ロック_original_0'
         # 134. メイドインアビス
-        if 'メイドインアビス' in title:
+        if 'メイドインアビス' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'メイドインアビス_original_{vol}'
             return 'メイドインアビス_original_0'
-        # 135. ザ・ファブル　Ｔｈｅ　ｓｅｃｏｎｄ
-        if 'ザ・ファブル　Ｔｈｅ　ｓｅｃｏｎｄ' in title:
+        # 135. ザ・ファブルＴｈｅｓｅｃｏｎｄ
+        if 'ザ・ファブルＴｈｅｓｅｃｏｎｄ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'ザ・ファブル　Ｔｈｅ　ｓｅｃｏｎｄ_original_{vol}'
-            return 'ザ・ファブル　Ｔｈｅ　ｓｅｃｏｎｄ_original_0'
+                return f'ザ・ファブルＴｈｅｓｅｃｏｎｄ_original_{vol}'
+            return 'ザ・ファブルＴｈｅｓｅｃｏｎｄ_original_0'
         # 136. 戦隊大失格
-        if '戦隊大失格' in title:
+        if '戦隊大失格' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'戦隊大失格_original_{vol}'
             return '戦隊大失格_original_0'
-        # 137. 仮面ライダーＤＶＤコレ平成　全国版
-        if '仮面ライダーＤＶＤコレ平成　全国版' in title:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
-            if match:
-                vol = match.group(0).translate(trans_table)
-                return f'仮面ライダーＤＶＤコレ平成　全国版_original_{vol}'
-            return '仮面ライダーＤＶＤコレ平成　全国版_original_0'
+        # 137. 仮面ライダーＤＶＤコレクション
+        if '仮面ライダーＤＶＤコレ' in title_no_space:
+            # 平成編
+            if '平成' in title_no_space:
+                match = re.search(r'[０-９\d]+', title)
+                if match:
+                    vol = match.group(0).translate(trans_table)
+                    return f'仮面ライダーＤＶＤコレ_平成編_{vol}'
+                return '仮面ライダーＤＶＤコレ_平成編_0'
+            # 昭和編（全国版）
+            elif 'クション全国' in title or 'コレクション全国' in title:
+                match = re.search(r'[０-９\d]+', title)
+                if match:
+                    vol = match.group(0).translate(trans_table)
+                    return f'仮面ライダーＤＶＤコレ_昭和編_{vol}'
+                return '仮面ライダーＤＶＤコレ_昭和編_0'
+            return '仮面ライダーＤＶＤコレ_original_0'
         # 138. 魔王城でおやすみ
-        if '魔王城でおやすみ' in title:
+        if '魔王城でおやすみ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1612,7 +1628,7 @@ def normalize_title(df):
                 return f'魔王城でおやすみ_original_{vol}'
             return '魔王城でおやすみ_original_0'
         # 139. 金田一３７歳の事件簿
-        if '金田一３７歳の事件簿' in title:
+        if '金田一３７歳の事件簿' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1620,7 +1636,7 @@ def normalize_title(df):
                 return f'金田一３７歳の事件簿_original_{vol}'
             return '金田一３７歳の事件簿_original_0'
         # 140. シャドーハウス
-        if 'シャドーハウス' in title:
+        if 'シャドーハウス' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1628,39 +1644,31 @@ def normalize_title(df):
                 return f'シャドーハウス_original_{vol}'
             return 'シャドーハウス_original_0'
         # 141. 陰の実力者になりたくて！
-        if '陰の実力者になりたくて！' in title:
+        if '陰の実力者になりたくて！' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'陰の実力者になりたくて！_original_{vol}'
             return '陰の実力者になりたくて！_original_0'
-        # 142. 空母いぶきＧＲＥＡＴ　ＧＡＭＥ
-        if '空母いぶきＧＲＥＡＴ　ＧＡＭＥ' in title:
+        # 142. 空母いぶきＧＲＥＡＴＧＡＭＥ
+        if '空母いぶきＧＲＥＡＴＧＡＭＥ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'空母いぶきＧＲＥＡＴ　ＧＡＭＥ_original_{vol}'
-            return '空母いぶきＧＲＥＡＴ　ＧＡＭＥ_original_0'
+                return f'空母いぶきＧＲＥＡＴＧＡＭＥ_original_{vol}'
+            return '空母いぶきＧＲＥＡＴＧＡＭＥ_original_0'
         # 143. ドッグスレッド
-        if 'ドッグスレッド' in title:
+        if 'ドッグスレッド' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'ドッグスレッド_original_{vol}'
             return 'ドッグスレッド_original_0'
-        # 144. ようこそ実力至上主義の教　２年生編
-        if 'ようこそ実力至上主義の教　２年生編' in title:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
-            if match:
-                vol = match.group(0).translate(trans_table)
-                return f'ようこそ実力至上主義の教　２年生編_original_{vol}'
-            return 'ようこそ実力至上主義の教　２年生編_original_0'
-        # 145. ゴジラ＆東宝特撮ＯＦＦＩＣＩＡＬＭ
-        if 'ゴジラ＆東宝特撮ＯＦＦＩＣＩＡＬＭ' in title:
+        # 144. ゴジラ＆東宝特撮ＯＦＦＩＣＩＡＬＭ
+        if 'ゴジラ＆東宝特撮ＯＦＦＩＣＩＡＬＭ' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1668,7 +1676,7 @@ def normalize_title(df):
                 return f'ゴジラ＆東宝特撮ＯＦＦＩＣＩＡＬＭ_original_{vol}'
             return 'ゴジラ＆東宝特撮ＯＦＦＩＣＩＡＬＭ_original_0'
         # 146. 舞妓さんちのまかないさん
-        if '舞妓さんちのまかないさん' in title:
+        if '舞妓さんちのまかないさん' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1676,39 +1684,52 @@ def normalize_title(df):
                 return f'舞妓さんちのまかないさん_original_{vol}'
             return '舞妓さんちのまかないさん_original_0'
         # 147. 無職転生～異世界行ったら本気だす～
-        if '無職転生～異世界行ったら本気だす～' in title:
+        if '無職転生～異世界行ったら本気だす～' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'無職転生～異世界行ったら本気だす～_original_{vol}'
             return '無職転生～異世界行ったら本気だす～_original_0'
-        # 148. あぶない刑事ＤＶＤコレクション全国版
-        if 'あぶない刑事ＤＶＤコレクション全国版' in title:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
-            if match:
-                vol = match.group(0).translate(trans_table)
-                return f'あぶない刑事ＤＶＤコレクション全国版_original_{vol}'
-            return 'あぶない刑事ＤＶＤコレクション全国版_original_0'
+        # 148. あぶない刑事ＤＶＤコレクション
+        if 'あぶない刑事ＤＶＤコレクション' in title_no_space:
+            # 全国版シリーズ
+            if '全国版' in title or '全国－' in title:
+                # 創刊号
+                if '創刊' in title_no_space:
+                    return 'あぶない刑事ＤＶＤコレクション_全国版_創刊'
+                # 巻数を抽出
+                match = re.search(r'[０-９\d]+', title)
+                if match:
+                    vol = match.group(0).translate(trans_table)
+                    return f'あぶない刑事ＤＶＤコレクション_全国版_{vol}'
+                return 'あぶない刑事ＤＶＤコレクション_全国版_0'
+            return 'あぶない刑事ＤＶＤコレクション_original_0'
         # 149. 負けヒロインが多すぎる！
-        if '負けヒロインが多すぎる！' in title:
+        if '負けヒロインが多すぎる！' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'負けヒロインが多すぎる！_original_{vol}'
             return '負けヒロインが多すぎる！_original_0'
-        # 150. からかい上手の高木さん
-        if 'からかい上手の高木さん' in title:
+        # 150-151. からかい上手の高木さん (combined)
+        if 'からかい上手の' in title and '高木さん' in title:
             title = re.sub(r'^特装版　', '', title)
+
+            # Check if it's the (元) variant
+            if '（元）' in title_no_space:
+                series = '(元)'
+            else:
+                series = 'original'
+
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
-                return f'からかい上手の高木さん_original_{vol}'
-            return 'からかい上手の高木さん_original_0'
+                return f'からかい上手の高木さん_{series}_{vol}'
+            return f'からかい上手の高木さん_{series}_0'
         # 151. ブラッククローバー
-        if 'ブラッククローバー' in title:
+        if 'ブラッククローバー' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1716,7 +1737,7 @@ def normalize_title(df):
                 return f'ブラッククローバー_original_{vol}'
             return 'ブラッククローバー_original_0'
         # 152. 花野井くんと恋の病
-        if '花野井くんと恋の病' in title:
+        if '花野井くんと恋の病' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1724,23 +1745,15 @@ def normalize_title(df):
                 return f'花野井くんと恋の病_original_{vol}'
             return '花野井くんと恋の病_original_0'
         # 153. アルスラーン戦記
-        if 'アルスラーン戦記' in title:
+        if 'アルスラーン戦記' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
                 vol = match.group(0).translate(trans_table)
                 return f'アルスラーン戦記_original_{vol}'
             return 'アルスラーン戦記_original_0'
-        # 154. からかい上手の（元）高木さん
-        if 'からかい上手の（元）高木さん' in title:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
-            if match:
-                vol = match.group(0).translate(trans_table)
-                return f'からかい上手の（元）高木さん_original_{vol}'
-            return 'からかい上手の（元）高木さん_original_0'
-        # 155. 転生したら第七王子だったので、気まま
-        if '転生したら第七王子だったので、気まま' in title:
+        # 154. 転生したら第七王子だったので、気まま
+        if '転生したら第七王子だったので、気まま' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1748,7 +1761,7 @@ def normalize_title(df):
                 return f'転生したら第七王子だったので、気まま_original_{vol}'
             return '転生したら第七王子だったので、気まま_original_0'
         # 156. ＭＩＮＥＣＲＡＦＴ～世界の果てへの旅
-        if 'ＭＩＮＥＣＲＡＦＴ～世界の果てへの旅' in title:
+        if 'ＭＩＮＥＣＲＡＦＴ～世界の果てへの旅' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1756,7 +1769,7 @@ def normalize_title(df):
                 return f'ＭＩＮＥＣＲＡＦＴ～世界の果てへの旅_original_{vol}'
             return 'ＭＩＮＥＣＲＡＦＴ～世界の果てへの旅_original_0'
         # 157. 転生賢者の異世界ライフ～第二の職業
-        if '転生賢者の異世界ライフ～第二の職業' in title:
+        if '転生賢者の異世界ライフ～第二の職業' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1764,7 +1777,7 @@ def normalize_title(df):
                 return f'転生賢者の異世界ライフ～第二の職業_original_{vol}'
             return '転生賢者の異世界ライフ～第二の職業_original_0'
         # 158. 来世は他人がいい
-        if '来世は他人がいい' in title:
+        if '来世は他人がいい' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1772,7 +1785,7 @@ def normalize_title(df):
                 return f'来世は他人がいい_original_{vol}'
             return '来世は他人がいい_original_0'
         # 159. 鵺の陰陽師
-        if '鵺の陰陽師' in title:
+        if '鵺の陰陽師' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1780,7 +1793,7 @@ def normalize_title(df):
                 return f'鵺の陰陽師_original_{vol}'
             return '鵺の陰陽師_original_0'
         # 160. 女神のカフェテラス
-        if '女神のカフェテラス' in title:
+        if '女神のカフェテラス' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1788,7 +1801,7 @@ def normalize_title(df):
                 return f'女神のカフェテラス_original_{vol}'
             return '女神のカフェテラス_original_0'
         # 161. 風都探偵
-        if '風都探偵' in title:
+        if '風都探偵' in title_no_space:
             title = re.sub(r'^特装版　', '', title)
             match = re.search(r'[０-９\d]+', title)
             if match:
@@ -1796,36 +1809,36 @@ def normalize_title(df):
                 return f'風都探偵_original_{vol}'
             return '風都探偵_original_0'
         # 162. 鬼滅の刃
-        if '鬼滅の刃' in title:
+        if '鬼滅の刃' in title_no_space:
             # 外伝
-            if '外伝' in title:
+            if '外伝' in title_no_space:
                 return '鬼滅の刃_外伝_0'
             # ノベライズシリーズ
-            if 'ノベライズ' in title:
+            if 'ノベライズ' in title_no_space:
                 return '鬼滅の刃_ノベライズ_0'
             # 小説シリーズ
             if any(x in title for x in ['風の道しるべ', 'しあわせの花', '片羽の蝶']):
                 return '鬼滅の刃_小説_0'
             # 塗絵帳シリーズ
-            if '塗絵帳' in title:
+            if '塗絵帳' in title_no_space:
                 return '鬼滅の刃_塗絵帳_0'
             # ファンブック
             if 'ファンブック' in title or '鬼殺隊見聞録' in title:
                 return '鬼滅の刃_ファンブック_0'
             # キャラクターズブック
-            if 'キャラクターズ' in title:
+            if 'キャラクターズ' in title_no_space:
                 return '鬼滅の刃_キャラクターズ_0'
             # イラスト記録集
-            if 'イラスト記録集' in title:
+            if 'イラスト記録集' in title_no_space:
                 return '鬼滅の刃_イラスト記録集_0'
             # 画集
-            if '画集' in title:
+            if '画集' in title_no_space:
                 return '鬼滅の刃_画集_0'
             # 劇場版
-            if '劇場版' in title:
+            if '劇場版' in title_no_space:
                 return '鬼滅の刃_劇場版_0'
             # 雑誌特別版
-            if 'メンズノンノ' in title:
+            if 'メンズノンノ' in title_no_space:
                 return '鬼滅の刃_雑誌特別版_0'
             # アクアビーズなど商品
             if any(x in title for x in ['アクアビーズ', 'ヒノカミ血風譚']):
@@ -1846,18 +1859,866 @@ def normalize_title(df):
                 vol = match.group(1).translate(trans_table)
                 return f'鬼滅の刃_original_{vol}'
             return '鬼滅の刃_original_0'
-        # 週刊誌・月刊誌は正規化不要（そのまま返す）
+
+        # 175. キメツ学園
+        if 'キメツ学園' in title_no_space:
+            # 全集中ドリルシリーズ
+            if '全集中ドリル' in title_no_space:
+                # 呼吸編を抽出
+                for breath in ['水の呼吸編', '霞の呼吸編', '蛇の呼吸編', '炎の呼吸編',
+                              '風の呼吸編', '恋の呼吸編', '岩の呼吸編', '音の呼吸編', '蟲の呼吸編']:
+                    if breath in title:
+                        return f'鬼滅の刃_キメツ学園全集中ドリル_{breath}_0'
+                return '鬼滅の刃_キメツ学園全集中ドリル_0'
+            # メインシリーズ
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'鬼滅の刃_キメツ学園_{volume}'
+            return '鬼滅の刃_キメツ学園_0'
+
+        # 163. ＷＯＲＬＤＳＥＩＫＹＯ
+        if 'ＷＯＲＬＤＳＥＩＫＹＯ' in title_no_space:
+            # ＴＨＥプレフィックスを削除
+            title = re.sub(r'^ＴＨＥ　', '', title)
+            # 特別号
+            if '年春号' in title or '年秋号' in title or '年夏号' in title or '年冬号' in title:
+                match = re.search(r'([０-９\d]+)年', title)
+                if match:
+                    year = match.group(1).translate(trans_table)
+                    if '春号' in title_no_space:
+                        return f'ＷＯＲＬＤＳＥＩＫＹＯ_特別号_{year}春'
+                    elif '夏号' in title_no_space:
+                        return f'ＷＯＲＬＤＳＥＩＫＹＯ_特別号_{year}夏'
+                    elif '秋号' in title_no_space:
+                        return f'ＷＯＲＬＤＳＥＩＫＹＯ_特別号_{year}秋'
+                    elif '冬号' in title_no_space:
+                        return f'ＷＯＲＬＤＳＥＩＫＹＯ_特別号_{year}冬'
+                return 'ＷＯＲＬＤＳＥＩＫＹＯ_特別号_0'
+            # 本編（巻数）
+            match = re.search(r'ＷＯＲＬＤＳＥＩＫＹＯ[　\s]+([０-９\d]+)', title)
+            if match:
+                vol = match.group(1).translate(trans_table)
+                return f'ＷＯＲＬＤＳＥＩＫＹＯ_original_{vol}'
+            return 'ＷＯＲＬＤＳＥＩＫＹＯ_original_0'
+        # 164. ＮＨＫラジオ中学生の基礎英語
+        if 'ＮＨＫラジオ中学生の基礎英語' in title_no_space:
+            # レベルを巻数として扱う
+            match = re.search(r'レベル[　\s]*([０-９\d]+)', title)
+            if match:
+                level = match.group(1).translate(trans_table)
+                return f'ＮＨＫラジオ_中学生の基礎英語_{level}'
+            return 'ＮＨＫラジオ_中学生の基礎英語_0'
+        # 165. 白鳥とコウモリ
+        if '白鳥とコウモリ' in title_no_space:
+            # 上下巻を巻数として扱う
+            if title_no_space.endswith('上'):
+                return '白鳥とコウモリ_original_上'
+            elif title_no_space.endswith('下'):
+                return '白鳥とコウモリ_original_下'
+            return '白鳥とコウモリ_original_0'
+
+        # 165-2. アマテラスの暗号
+        if 'アマテラスの暗号' in title_no_space:
+            if title_no_space.endswith('上'):
+                return 'アマテラスの暗号_original_上'
+            elif title_no_space.endswith('下'):
+                return 'アマテラスの暗号_original_下'
+            return 'アマテラスの暗号_original_0'
+
+        # 165-3. 俺たちの箱根駅伝
+        if '俺たちの箱根駅伝' in title_no_space:
+            if title_no_space.endswith('上'):
+                return '俺たちの箱根駅伝_original_上'
+            elif title_no_space.endswith('下'):
+                return '俺たちの箱根駅伝_original_下'
+            return '俺たちの箱根駅伝_original_0'
+
+        # 165-4. ８９８ぴきせいぞろい！ポケモン大図鑑
+        if '８９８ぴきせいぞろい！ポケモン大図鑑' in title_no_space:
+            if title_no_space.endswith('上'):
+                return '８９８ぴきせいぞろい！ポケモン大図鑑_original_上'
+            elif title_no_space.endswith('下'):
+                return '８９８ぴきせいぞろい！ポケモン大図鑑_original_下'
+            return '８９８ぴきせいぞろい！ポケモン大図鑑_original_0'
+
+        # 165-5. 塞王の楯
+        if '塞王の楯' in title_no_space:
+            if title_no_space.endswith('上'):
+                return '塞王の楯_original_上'
+            elif title_no_space.endswith('下'):
+                return '塞王の楯_original_下'
+            return '塞王の楯_original_0'
+
+        # 地域版雑誌（シリーズ扱い）
+        # 166. ＴＶｎａｖｉ
+        if 'ＴＶｎａｖｉ' in title_no_space:
+            # 地域版をシリーズ名として扱う
+            if '首都圏版' in title_no_space:
+                return 'ＴＶｎａｖｉ_首都圏版_0'
+            elif '宮城・福島版' in title_no_space:
+                return 'ＴＶｎａｖｉ_宮城・福島版_0'
+            elif '秋田・山形版' in title_no_space:
+                return 'ＴＶｎａｖｉ_秋田・山形版_0'
+            elif '北海道版' in title_no_space:
+                return 'ＴＶｎａｖｉ_北海道版_0'
+            return 'ＴＶｎａｖｉ_original_0'
+        # 167. ＴＶステーション
+        if 'ＴＶステーション' in title_no_space:
+            if '東版' in title_no_space:
+                return 'ＴＶステーション_東版_0'
+            return 'ＴＶステーション_original_0'
+        # 168. ＴＶｓｔａｔｉｏｎ
+        if 'ＴＶｓｔａｔｉｏｎ' in title_no_space:
+            if '関東版' in title_no_space:
+                return 'ＴＶｓｔａｔｉｏｎ_関東版_0'
+            return 'ＴＶｓｔａｔｉｏｎ_original_0'
+        # 169. ＴＶＬＩＦＥ
+        if 'ＴＶＬＩＦＥ' in title_no_space:
+            if '首都圏版' in title_no_space:
+                return 'ＴＶＬＩＦＥ_首都圏版_0'
+            elif '北海道・青森版' in title_no_space:
+                return 'ＴＶＬＩＦＥ_北海道・青森版_0'
+            return 'ＴＶＬＩＦＥ_original_0'
+        # 170. 月刊ザ・テレビジョン
+        if '月刊ザ・テレビジョン' in title or ('ザ・テレビジョン' in title and 'グラビア' not in title):
+            if '首都圏版' in title or '首都圏関東版' in title:
+                return '月刊ザ・テレビジョン_首都圏版_0'
+            elif '北海道版' in title or '北海道青森版' in title:
+                return '月刊ザ・テレビジョン_北海道版_0'
+            elif '秋田岩手山形' in title_no_space:
+                return '月刊ザ・テレビジョン_秋田岩手山形版_0'
+            return '月刊ザ・テレビジョン_original_0'
+        # 171. 月刊ＴＶガイド
+        if '月刊ＴＶガイド' in title_no_space:
+            if '関東版' in title_no_space:
+                return '月刊ＴＶガイド_関東版_0'
+            elif '北海道版' in title_no_space:
+                return '月刊ＴＶガイド_北海道版_0'
+            return '月刊ＴＶガイド_original_0'
+        # 172. ゼクシィ
+        if 'ゼクシィ' in title_no_space:
+            if '首都圏' in title_no_space:
+                return 'ゼクシィ_首都圏_0'
+            elif '茨城・栃木・群馬' in title_no_space:
+                return 'ゼクシィ_茨城・栃木・群馬_0'
+            elif '青森・秋田・岩手' in title_no_space:
+                return 'ゼクシィ_青森・秋田・岩手_0'
+            elif '福島' in title_no_space:
+                return 'ゼクシィ_福島_0'
+            elif '北海道' in title_no_space:
+                return 'ゼクシィ_北海道_0'
+            elif '宮城・山形' in title_no_space:
+                return 'ゼクシィ_宮城・山形_0'
+            elif '新潟' in title_no_space:
+                return 'ゼクシィ_新潟_0'
+            elif '国内リゾートウエディング' in title_no_space:
+                return 'ゼクシィ_国内リゾートウエディング_0'
+            elif '海外ウエディング' in title_no_space:
+                return 'ゼクシィ_海外ウエディング_0'
+            return 'ゼクシィ_original_0'
+
+        # 173. ようこそ実力至上主義の教室へ
+        if 'ようこそ実力至上主義' in title_no_space:
+            # シリーズ名を検出
+            series = 'original'
+            if '２年生編' in title_no_space:
+                series = '２年生編'
+            elif '１年生編' in title_no_space:
+                series = '１年生編'
+            elif '√堀北' in title_no_space:
+                series = '√堀北'
+
+            # 巻数を抽出（全角ピリオド「．」に対応）
+            volume_match = re.search(r'[　\s]+([０-９\d]+(?:[．.][５5])?)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                # 全角ピリオドを半角に変換
+                volume = volume.replace('．', '.')
+                return f'ようこそ実力至上主義の教室へ_{series}_{volume}'
+
+            # 「公式」などのキーワードがある場合
+            if '公式' in title_no_space:
+                return f'ようこそ実力至上主義の教室へ_{series}公式_0'
+
+            return f'ようこそ実力至上主義の教室へ_{series}_0'
+
+        # 174. ジョジョの奇妙な冒険
+        if 'ＪＯＪＯ' in title_no_space:
+            # ＴｈｅＣＪＯＪＯＬａｎｄｓシリーズ
+            if 'ＪＯＪＯＬａｎｄｓ' in title_no_space:
+                # 巻数を抽出
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ジョジョの奇妙な冒険_ＴｈｅＪＯＪＯＬａｎｄｓ_{volume}'
+                return 'ジョジョの奇妙な冒険_ＴｈｅＪＯＪＯＬａｎｄｓ_0'
+
+        # 176. ＮＨＫラジオまいにち（各言語）
+        if 'ＮＨＫラジオ' in title and 'まいにち' in title:
+            # 言語名を検出（書名が見切れている可能性があるため、部分一致で判定）
+            languages = [
+                ('中国語', '中国語'),
+                ('ハングル', 'ハングル講座'),
+                ('スペイン語', 'スペイン語'),
+                ('イタリア語', 'イタリア語'),
+                ('ドイツ語', 'ドイツ語'),
+                ('フランス語', 'フランス語'),
+                ('ロシア語', 'ロシア語')
+            ]
+
+            for lang_key, lang_name in languages:
+                if lang_key in title:
+                    # 巻数を抽出
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫラジオ_まいにち{lang_name}_{volume}'
+                    return f'ＮＨＫラジオ_まいにち{lang_name}_0'
+
+            # 言語が検出できない場合
+            return 'ＮＨＫラジオ_まいにち_0'
+
+        # 177. 会社四季報
+        if '四季報' in title_no_space:
+
+            # 会社四季報別冊
+            if '会社四季報別冊' in title_no_space:
+                # 巻数を抽出
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'会社四季報_別冊_{volume}'
+                return '会社四季報_別冊_0'
+
+            # 会社四季報 業界地図
+            if '業界地図' in title_no_space:
+                # 年度を抽出（\u2018=', \u2019='）
+                year_match = re.search(r"[\u2018\u2019']([０-９\d]+)", title)
+                if year_match:
+                    year = year_match.group(1).translate(trans_table)
+                    return f'会社四季報_業界地図_{year}'
+                return '会社四季報_業界地図_0'
+
+            # 会社四季報増（季節号）
+            if '会社四季報増' in title_no_space:
+                # 年度と季節を抽出
+                year_match = re.search(r'([０-９\d]+)年', title)
+                season = ''
+                if '春' in title_no_space:
+                    season = '春'
+                elif '夏' in title_no_space:
+                    season = '夏'
+                elif '秋' in title_no_space:
+                    season = '秋'
+                elif '冬' in title or '新春' in title:
+                    season = '冬'
+
+                if year_match and season:
+                    year = year_match.group(1).translate(trans_table)
+                    return f'会社四季報_季節号_{year}{season}'
+                return '会社四季報_季節号_0'
+
+            # 就職四季報
+            if '就職四季報' in title_no_space:
+                # 年度を抽出（\u2018=', \u2019='）
+                year_match = re.search(r"[\u2018\u2019']([０-９\d]+)", title)
+                series = 'original'
+                if '総合版' in title_no_space:
+                    series = '総合版'
+                elif '中堅企業版' in title_no_space:
+                    series = '中堅企業版'
+                elif '女性活躍版' in title_no_space:
+                    series = '女性活躍版'
+                elif '企業研究' in title_no_space or 'インターン' in title_no_space:
+                    series = '企業研究・インターン版'
+
+                if year_match:
+                    year = year_match.group(1).translate(trans_table)
+                    return f'会社四季報_就職_{series}_{year}'
+                return f'会社四季報_就職_{series}_0'
+
+            # 米国会社四季報
+            if '米国' in title_no_space:
+                # 年度と季節を抽出（\u2018=', \u2019='）
+                year_match = re.search(r"[\u2018\u2019']([０-９\d]+)", title)
+                season = ''
+                if '春' in title_no_space:
+                    season = '春夏'
+                elif '秋' in title or '冬' in title:
+                    season = '秋冬'
+
+                if year_match and season:
+                    year = year_match.group(1).translate(trans_table)
+                    return f'会社四季報_米国_{year}{season}'
+                return '会社四季報_米国_0'
+
+            # 競馬四季報
+            if '競馬' in title_no_space:
+                return '競馬四季報_original_0'
+
+            # その他の四季報関連書籍
+            if any(x in title_no_space for x in ['公式ガイド', '読み方', '見て得する', '速読', '鬼１００則', '投資の極意']):
+                return '会社四季報_関連書籍_0'
+
+            # 役員四季報
+            if '役員' in title_no_space:
+                year_match = re.search(r'([０-９\d]+)年', title)
+                if year_match:
+                    year = year_match.group(1).translate(trans_table)
+                    return f'会社四季報_役員_{year}'
+                return '会社四季報_役員_0'
+
+            # 会社四季報（ベース版）
+            if title_no_space == '会社四季報' or title_no_space.startswith('会社四季報'):
+                # 巻数を抽出
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'会社四季報_original_{volume}'
+                return '会社四季報_original_0'
+
+        # 178. 十角館の殺人
+        if '十角館の殺人' in title_no_space:
+            # 新装改訂版
+            if '新装改訂版' in title_no_space:
+                # 巻数を抽出
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'十角館の殺人_新装改訂版_{volume}'
+                return '十角館の殺人_新装改訂版_0'
+            # 通常版
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'十角館の殺人_original_{volume}'
+            return '十角館の殺人_original_0'
+
+        # 179. ＮＨＫラジオラジオビジネス英語
+        if 'ラジオビジネス英語' in title_no_space:
+            # CD版
+            if 'ＣＤ' in title_no_space:
+                # 月号を抽出
+                month_match = re.search(r'([０-９\d]+)月号', title)
+                if month_match:
+                    month = month_match.group(1).translate(trans_table)
+                    return f'ＮＨＫラジオ_ラジオビジネス英語CD_{month}月'
+                return 'ＮＨＫラジオ_ラジオビジネス英語CD_0'
+            # 通常版
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'ＮＨＫラジオ_ラジオビジネス英語_{volume}'
+            return 'ＮＨＫラジオ_ラジオビジネス英語_0'
+
+        # 180. ＮＨＫテレビ英会話フィーリングリッシュ
+        if 'フィーリングリッシュ' in title_no_space:
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'ＮＨＫテレビ_英会話フィーリングリッシュ_{volume}'
+            return 'ＮＨＫテレビ_英会話フィーリングリッシュ_0'
+
+        # 181. ＮＨＫラジオラジオ英会話
+        if 'ＮＨＫラジオラジオ英会話' in title_no_space:
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'ＮＨＫラジオ_ラジオ英会話_{volume}'
+            return 'ＮＨＫラジオ_ラジオ英会話_0'
+
+        # 182. その他のＮＨＫラジオ作品（包括的処理）
+        if title_no_space.startswith('ＮＨＫラジオ'):
+            # 「ＮＨＫラジオ」の後の番組名を抽出
+            # まずスペースを正規化
+            normalized = title.replace('ＮＨＫラジオ', '', 1).strip()
+            normalized = re.sub(r'^[　\s]+', '', normalized)
+
+            # 番組名と巻数を分離
+            # 巻数パターン：末尾の数字、レベル、月号など
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', normalized)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                program_name = normalized[:volume_match.start()].strip()
+                # 全ての空白を削除
+                program_name = program_name.replace(' ', '').replace('　', '')
+                return f'ＮＨＫラジオ_{program_name}_{volume}'
+
+            # 巻数がない場合
+            # 全ての空白を削除
+            program_name = normalized.replace(' ', '').replace('　', '')
+            if program_name:
+                return f'ＮＨＫラジオ_{program_name}_0'
+            # 番組名が取れない場合は元のタイトルを返す
+            return original_title.replace(' ', '').replace('　', '')
+
+        # 183. アルジャーノンに花束を
+        if 'アルジャーノンに花束を' in title_no_space:
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'アルジャーノンに花束を_original_{volume}'
+            return 'アルジャーノンに花束を_original_0'
+
+        # 184. 青い壺
+        if '青い壺' in title_no_space:
+            # 新装版
+            if '新装版' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'青い壺_新装版_{volume}'
+                return '青い壺_新装版_0'
+            # 通常版
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'青い壺_original_{volume}'
+            return '青い壺_original_0'
+
+        # 185. 成瀬シリーズ
+        if '成瀬' in title_no_space:
+            # 成瀬は天下を取りにいく
+            if '成瀬は天下を取りにいく' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'成瀬_成瀬は天下を取りにいく_{volume}'
+                return '成瀬_成瀬は天下を取りにいく_0'
+
+            # 成瀬は信じた道をいく
+            if '成瀬は信じた道をいく' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'成瀬_成瀬は信じた道をいく_{volume}'
+                return '成瀬_成瀬は信じた道をいく_0'
+
+            # 成瀬は恋が証明できない
+            if '成瀬は恋が証明できない' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'成瀬_成瀬は恋が証明できない_{volume}'
+                return '成瀬_成瀬は恋が証明できない_0'
+
+            # 成瀬ちゆりはコスりたい
+            if '成瀬ちゆりはコスりたい' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'成瀬_成瀬ちゆりはコスりたい_{volume}'
+                return '成瀬_成瀬ちゆりはコスりたい_0'
+
+        # 186. 遊☆戯☆王
+        if '遊☆戯☆王' in title_no_space:
+            # OCG STORIES
+            if 'ＳＴＯＲＩＥＳ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_OCGSTORIES_{volume}'
+                return '遊☆戯☆王_OCGSTORIES_0'
+
+            # OCGストラクチャーズ
+            if 'ストラクチャーズ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_OCGストラクチャーズ_{volume}'
+                return '遊☆戯☆王_OCGストラクチャーズ_0'
+
+            # 公式カードカタログ
+            if '公式カードカタログ' in title_no_space:
+                # EXシリーズ
+                if 'ＥＸ' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'遊☆戯☆王_公式カードカタログEX_{volume}'
+                    return '遊☆戯☆王_公式カードカタログEX_0'
+                # ザ・シリーズ
+                elif 'ザ・' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'遊☆戯☆王_公式カードカタログザ_{volume}'
+                    return '遊☆戯☆王_公式カードカタログザ_0'
+                # 通常版
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_公式カードカタログ_{volume}'
+                return '遊☆戯☆王_公式カードカタログ_0'
+
+            # OCGパーフェクトルールブック
+            if 'パーフェクトルー' in title or 'パーフェクトルール' in title:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_OCGパーフェクトルールブック_{volume}'
+                return '遊☆戯☆王_OCGパーフェクトルールブック_0'
+
+            # ゴーラッシュ!!
+            if 'ゴーラッシュ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_ゴーラッシュ!!_{volume}'
+                return '遊☆戯☆王_ゴーラッシュ!!_0'
+
+            # ARC-V
+            if 'ＡＲＣ－Ｖ' in title or 'ARC-V' in title:
+                # 最強デュエリスト
+                if '最強デュエリスト' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'遊☆戯☆王_ARC-V最強デュエリスト_{volume}'
+                    return '遊☆戯☆王_ARC-V最強デュエリスト_0'
+                # 通常版
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_ARC-V_{volume}'
+                return '遊☆戯☆王_ARC-V_0'
+
+            # GX
+            if 'ＧＸ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_GX_{volume}'
+                return '遊☆戯☆王_GX_0'
+
+            # ラッシュデュエル
+            if 'ラッシュデュエル' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_ラッシュデュエル_{volume}'
+                return '遊☆戯☆王_ラッシュデュエル_0'
+
+            # デュエルモンスターズ
+            if 'デュエルモンスターズ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'遊☆戯☆王_デュエルモンスターズ_{volume}'
+                return '遊☆戯☆王_デュエルモンスターズ_0'
+
+            # その他（original）
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'遊☆戯☆王_original_{volume}'
+            return '遊☆戯☆王_original_0'
+
+        # 186. NHK（ラジオ・テレビを除く）
+        if title_no_space.startswith('ＮＨＫ') and not title_no_space.startswith('ＮＨＫラジオ') and not title_no_space.startswith('ＮＨＫテレビ'):
+            # きょうの料理
+            if 'きょうの料理' in title_no_space:
+                if 'ビギナーズ' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_きょうの料理ビギナーズ_{volume}'
+                    return 'ＮＨＫ_きょうの料理ビギナーズ_0'
+                else:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_きょうの料理_{volume}'
+                    return 'ＮＨＫ_きょうの料理_0'
+
+            # きょうの健康
+            if 'きょうの健康' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_きょうの健康_{volume}'
+                return 'ＮＨＫ_きょうの健康_0'
+
+            # すてきにハンドメイド
+            if 'すてきにハンドメイド' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_すてきにハンドメイド_{volume}'
+                return 'ＮＨＫ_すてきにハンドメイド_0'
+
+            # 趣味の園芸
+            if '趣味の園芸' in title_no_space:
+                if 'やさいの時間' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_趣味の園芸やさいの時間_{volume}'
+                    return 'ＮＨＫ_趣味の園芸やさいの時間_0'
+                else:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_趣味の園芸_{volume}'
+                    return 'ＮＨＫ_趣味の園芸_0'
+
+            # 俳句
+            if '俳句' in title and '俳句講座' not in title:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_俳句_{volume}'
+                return 'ＮＨＫ_俳句_0'
+
+            # 短歌
+            if '短歌' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_短歌_{volume}'
+                return 'ＮＨＫ_短歌_0'
+
+            # 囲碁講座
+            if '囲碁講座' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_囲碁講座_{volume}'
+                return 'ＮＨＫ_囲碁講座_0'
+
+            # 将棋講座
+            if '将棋講座' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_将棋講座_{volume}'
+                return 'ＮＨＫ_将棋講座_0'
+
+            # しあわせ気分の○○語シリーズ
+            if 'しあわせ気分の' in title_no_space:
+                for lang in ['フランス語', 'スペイン語', 'イタリア語', 'ドイツ語']:
+                    if lang in title:
+                        volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                        if volume_match:
+                            volume = volume_match.group(1).translate(trans_table)
+                            return f'ＮＨＫ_しあわせ気分の{lang}_{volume}'
+                        return f'ＮＨＫ_しあわせ気分の{lang}_0'
+
+            # ハングル講座書いてマスター
+            if 'ハングル講座' in title and '書いてマスター' in title:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_ハングル講座書いてマスター_{volume}'
+                return 'ＮＨＫ_ハングル講座書いてマスター_0'
+
+            # 趣味どきっ
+            if '趣味どきっ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_趣味どきっ_{volume}'
+                return 'ＮＨＫ_趣味どきっ_0'
+
+            # みんなの手話
+            if 'みんなの手話' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_みんなの手話_{volume}'
+                return 'ＮＨＫ_みんなの手話_0'
+
+            # おかあさんといっしょ
+            if 'おかあさんといっしょ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_おかあさんといっしょ_{volume}'
+                return 'ＮＨＫ_おかあさんといっしょ_0'
+
+            # みんなのうた
+            if 'みんなのうた' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_みんなのうた_{volume}'
+                return 'ＮＨＫ_みんなのうた_0'
+
+            # まる得マガジン
+            if 'まる得マガジン' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_まる得マガジン_{volume}'
+                return 'ＮＨＫ_まる得マガジン_0'
+
+            # 大河ドラマ（作品名をシリーズとして抽出）
+            if '大河ドラマ' in title_no_space:
+                # 作品名を抽出（光る君へ、べらぼう など）
+                if '光る君へ' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_大河ドラマ光る君へ_{volume}'
+                    return 'ＮＨＫ_大河ドラマ光る君へ_0'
+                elif 'べらぼう' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_大河ドラマべらぼう_{volume}'
+                    return 'ＮＨＫ_大河ドラマべらぼう_0'
+                else:
+                    # その他の大河ドラマ
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_大河ドラマ_{volume}'
+                    return 'ＮＨＫ_大河ドラマ_0'
+
+            # 連続テレビ小説（作品名をシリーズとして抽出）
+            if '連続テレビ小説' in title_no_space:
+                # 作品名を抽出（虎に翼、ブギウギ、おむすび など）
+                if '虎に翼' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_連続テレビ小説虎に翼_{volume}'
+                    return 'ＮＨＫ_連続テレビ小説虎に翼_0'
+                elif 'ブギウギ' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_連続テレビ小説ブギウギ_{volume}'
+                    return 'ＮＨＫ_連続テレビ小説ブギウギ_0'
+                elif 'おむすび' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_連続テレビ小説おむすび_{volume}'
+                    return 'ＮＨＫ_連続テレビ小説おむすび_0'
+                elif 'らんまん' in title_no_space:
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_連続テレビ小説らんまん_{volume}'
+                    return 'ＮＨＫ_連続テレビ小説らんまん_0'
+                else:
+                    # その他の連続テレビ小説
+                    volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                    if volume_match:
+                        volume = volume_match.group(1).translate(trans_table)
+                        return f'ＮＨＫ_連続テレビ小説_{volume}'
+                    return 'ＮＨＫ_連続テレビ小説_0'
+
+            # その他のNHK作品
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'ＮＨＫ_original_{volume}'
+            return 'ＮＨＫ_original_0'
+
+        # 187. ラジオ深夜便（ＮＨＫなしも対応）
+        if 'ラジオ深夜便' in title_no_space:
+            volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+            if volume_match:
+                volume = volume_match.group(1).translate(trans_table)
+                return f'ＮＨＫ_ラジオ深夜便_{volume}'
+            return 'ＮＨＫ_ラジオ深夜便_0'
+
+        # 188. 大河ドラマ（ＮＨＫなしで始まる場合）
+        if title_no_space.startswith('大河ドラマ'):
+            # 作品名を抽出（光る君へ、べらぼう など）
+            if '光る君へ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_大河ドラマ光る君へ_{volume}'
+                return 'ＮＨＫ_大河ドラマ光る君へ_0'
+            elif 'べらぼう' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_大河ドラマべらぼう_{volume}'
+                return 'ＮＨＫ_大河ドラマべらぼう_0'
+            else:
+                # その他の大河ドラマ
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_大河ドラマ_{volume}'
+                return 'ＮＨＫ_大河ドラマ_0'
+
+        # 189. 連続テレビ小説（ＮＨＫなしで始まる場合）
+        if title_no_space.startswith('連続テレビ小説'):
+            # 作品名を抽出（虎に翼、ブギウギ、おむすび など）
+            if '虎に翼' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_連続テレビ小説虎に翼_{volume}'
+                return 'ＮＨＫ_連続テレビ小説虎に翼_0'
+            elif 'ブギウギ' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_連続テレビ小説ブギウギ_{volume}'
+                return 'ＮＨＫ_連続テレビ小説ブギウギ_0'
+            elif 'おむすび' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_連続テレビ小説おむすび_{volume}'
+                return 'ＮＨＫ_連続テレビ小説おむすび_0'
+            elif 'らんまん' in title_no_space:
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_連続テレビ小説らんまん_{volume}'
+                return 'ＮＨＫ_連続テレビ小説らんまん_0'
+            else:
+                # その他の連続テレビ小説
+                volume_match = re.search(r'[　\s]+([０-９\d]+)[　\s]*$', title)
+                if volume_match:
+                    volume = volume_match.group(1).translate(trans_table)
+                    return f'ＮＨＫ_連続テレビ小説_{volume}'
+                return 'ＮＨＫ_連続テレビ小説_0'
+
+        # 週刊誌・月刊誌は正規化不要（括弧内の読み仮名のみ削除して返す）
         weekly_magazines = [
-            'ＮＨＫラジオ', '週刊少年ジャンプ', '週刊文春', '週刊女性セブン', 'ＮＨＫきょうの料理',
-            'ａｎａｎ', '週刊女性自身', 'コロコロコミック', '週刊新潮', '週刊少年マガジン',
-            '週刊ポスト', '週刊ダイヤモンド', 'プレジデント', '週刊少年サンデー', '週刊ＴＶガイド',
-            '文藝春秋', '週刊現代', 'ヤングジャンプ', 'ＢＲＵＴＵＳ', 'クロワッサン',
-            'りぼん', 'めばえ', 'ＡＥＲＡ', 'ＦＲＩＤＡＹ', 'ちゃお'
+            # 元からあるもの（括弧なし）
+            'ＮＨＫラジオ', '週刊少年ジャンプ', '週刊文春', '週刊女性セブン',
+            '週刊女性自身', 'コロコロコミック', '週刊新潮', '週刊少年マガジン',
+            '週刊ポスト', '週刊ダイヤモンド', 'プレジデント', '週刊少年サンデー',
+            '文藝春秋', '週刊現代', 'ヤングジャンプ', 'クロワッサン',
+            'りぼん', 'めばえ', 'ちゃお',
+            # 括弧付き雑誌（生データから抽出した正確な表記、出現回数500回以上）
+            'ジャンプＳＱ．', 'ダイヤモンドＺＡＩ', 'マンスリーＷＩＬＬ', '和樂', '少年サンデー増　サンデーＳ',
+            '月刊ｆｌｏｗｅｒｓ', '美人百花', '美的', '美ＳＴ', '週刊ＴＶガイド',
+            '＆Ｐｒｅｍｉｕｍ', '＆ＲＯＳＹ', 'ＡＥＲＡ', 'ＡｉｒＳｔａｇｅ', 'ＡＩＲ　ＬＩＮＥ　', 'ＡＵＴＯ　ＳＰＯＲＴ',
+            'ＢＡＩＬＡ', 'ＢＥ－ＬＯＶＥ', 'ＢＥ－ＰＡＬ', 'ＢＯＭＢ！', 'ＢＲＵＴＵＳ',
+            'ＢＵＲＲＮ！', 'Ｂｅｇｉｎ', 'ＢｉｋｅＪＩＮ', 'ＣＡＲトップ', 'ＣＬＡＳＳＹ．',
+            'ＣＬＵＥＬ', 'Ｃａｎ　Ｃａｍ', 'Ｃａｓａ　ＢＲＵＴＵＳ', 'ＤＩＭＥ', 'ＤＵｅＴ',
+            'ＥＳＳＥ', 'ＦＡＮＺＡ', 'ＦＩＧＡＲＯ　ｊａｐｏｎ', 'ＦＩＮＥＢＯＹＳ', 'ＦＬＡＳＨ　',
+            'ＦＲＩＤＡＹ', 'ＦＵＤＧＥ', 'ＧＩＮＺＡ', 'ＧＩＳＥＬｅ', 'ＧＬＯＷ',
+            'ＧＯＬＦ　ＴＯＤＡＹ', 'ＨＯ', 'ＨＯＮＫＯＷＡ', 'Ｈａｎａｋｏ', 'Ｉｎ　Ｒｅｄ', 'Ｉｎｔｅｒ　ｆａｃｅ',
+            'Ｋｉｓｓ', 'Ｌ　Ｅ　Ｅ　', 'ＬＤＫ', 'ＬＥＯＮ', 'Ｌａ・Ｌａ　',
+            'ＭＡＱＵＩＡ', 'ＭＯＮＯＱＬＯ', 'ＭＹＳＴＥＲＹ　ｓａｒａ', 'Ｍｅｎ\'ｓ　ＮＯＮＮＯ', 'Ｍｏｎｏ　Ｍａｘ',
+            'ＭｙｏＪｏ', 'ＮＹＬＯＮ　ＪＡＰＡＮ', 'Ｎｅｗｔｏｎ', 'ＯＣＥＡＮＳ', 'ＯＦＦＩＣＥ　ＹＯＵ　',
+            'ＯＺ　ｍａｇａｚｉｎｅ', 'Ｏｇｇｉ', 'ＰＯＰＥＹＥ', 'ＰＯＴＡＴＯ', 'Ｐｒｅｃｉｏｕｓ',
+            'ＳＰＡ！', 'ＳＴＯＲＹ', 'Ｓａｆａｒｉ', 'ＵＯＭＯ', 'ＶＥＲＹ',
+            'ＶＯＣＥ', 'ＶＯＧＵＥ　ＪＡＰＡＮ', 'Ｖｉ　Ｖｉ　', 'ＷＩＮＫ　ＵＰ', 'ａｎａｎ',
+            'ｄａｎｃｙｕ', 'ｅｃｌａｔ', 'ｆｏｒ　Ｍｒｓ．', 'ｋｏｄｏｍｏｅ', 'ｋｕ：ｎｅｌ',
+            'ｍｅｎ\'ｓＦＵＤＧＥ', 'ｎｉｃｏｌａ', 'ｎｏｎ・ｎｏ', 'ｏｔｏｎａ　ＭＵＳＥ', 'ｓｗｅｅｔ'
         ]
         for magazine in weekly_magazines:
-            if magazine in title:
-                return original_title
-        return original_title
+            if magazine in original_title:
+                # 括弧内の読み仮名を削除（閉じ括弧がない場合も対応）
+                cleaned_title = re.sub(r'（[^）]*）?', '', original_title)
+                # 全ての空白を削除
+                cleaned_title = cleaned_title.replace(' ', '').replace('　', '')
+                return cleaned_title
+        return original_title.replace(' ', '').replace('　', '')
 
     df['書名'] = df['書名'].apply(process_title)
     return df
@@ -1892,9 +2753,21 @@ def remove_volume_number(df, remove_series=False):
             return parts[0]
         else:
             if len(parts) >= 3:
-                return f"{parts[0]}_{parts[1]}"
+                # 最後の部分が数字（または小数点を含む数字）の場合のみ削除
+                last_part = parts[-1]
+                # 数字、小数点付き数字、またはゼロをチェック
+                if last_part.replace('.', '').isdigit() or last_part == '0':
+                    return f"{parts[0]}_{parts[1]}"
+                else:
+                    # 上・下・前編・後編などはそのまま残す
+                    return title
             else:
-                return parts[0]
+                # 2パーツの場合、最後が数字なら削除
+                last_part = parts[-1]
+                if last_part.replace('.', '').isdigit() or last_part == '0':
+                    return parts[0]
+                else:
+                    return title
     df['書名'] = df['書名'].apply(process_volume)
     return df
 
@@ -1975,13 +2848,12 @@ def clean_df(df, store_detail, remove_series=False):
     df = fill_publisher_by_ISBN(df)
     df = normalize_author(df)
     df = normalize_title(df)
-    df = remove_volume_number(df, remove_series)
 
     delete_space_columns = df.select_dtypes(include=['object']).columns.tolist()
     df = fill_missing_class(df)
     df = merge_store_detail(df, store_detail)
     df = delete_space(df, delete_space_columns)
-    #df = remove_volume_number(df)
+    #df = remove_volume_number(df, remove_series)
 
     return df
 
