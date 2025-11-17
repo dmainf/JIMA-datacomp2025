@@ -3,21 +3,31 @@ import pandas as pd
 import chardet
 import datetime as dt
 
-# === 修正版: ディレクトリ構成 ===
+# === ディレクトリ構成 ===
 BASE_DIR = os.path.dirname(__file__)  # ← eda_2フォルダが基準
-STORE_FILE = os.path.join(BASE_DIR, "data", "Store.csv")  # ← eda_2/data/Store.csv
+STORE_FILE = os.path.join(BASE_DIR, "data", "Store_4th.csv")  # ← eda_2/data/Store_4th.csv
 STORE_CODE_FILE = os.path.join(BASE_DIR, "..", "data", "store_code.txt")  # ← launch/data/store_code.txt
 DATA_STORE_DIR = os.path.join(BASE_DIR, "data_store")  # ← eda_2/data_store/
 
 
-def get_population_from_mesh(mesh_code: str):
+# === 共通関数（3次/4次メッシュ対応） ===
+def get_population_from_mesh(mesh_code: str, mesh_type="3rd"):
+    """
+    mesh_type : "3rd" or "4th"
+    3次メッシュ → tblT001140S~
+    4次メッシュ → tblT001141H~
+    """
     try:
         mesh_code = str(mesh_code).strip().replace("　", "")
         if not mesh_code.isdigit() or len(mesh_code) < 4:
             return 0
 
         prefix = mesh_code[:4]
-        file_name = f"tblT001140S{prefix}.csv"
+        if mesh_type == "4th":
+            file_name = f"tblT001141H{prefix}.csv"
+        else:
+            file_name = f"tblT001140S{prefix}.csv"
+
         file_path = os.path.join(DATA_STORE_DIR, file_name)
 
         if not os.path.exists(file_path):
@@ -28,7 +38,7 @@ def get_population_from_mesh(mesh_code: str):
             enc = chardet.detect(raw)["encoding"] or "utf-8"
 
         try:
-            df_sub = pd.read_csv(file_path, encoding=enc, header=None)
+            df_sub = pd.read_csv(file_path, encoding=enc, header=None, low_memory=False)
         except UnicodeDecodeError:
             df_sub = pd.read_csv(file_path, encoding="cp932", header=None)
 
@@ -50,11 +60,14 @@ def get_population_from_mesh(mesh_code: str):
         print(f"Error : mesh_code = {mesh_code} {e}")
         return 0
 
+
+# === Store_4th.csv 読み込み ===
 try:
     df_store = pd.read_csv(STORE_FILE, encoding="utf-8-sig")
 except UnicodeDecodeError:
     df_store = pd.read_csv(STORE_FILE, encoding="cp932")
 
+# === store_code.txt ===
 try:
     df_codes = pd.read_csv(
         STORE_CODE_FILE,
@@ -70,9 +83,10 @@ try:
                 df_store.loc[df_store[col] == "", col] = df_codes[col]
         print("input store_code.txt")
     else:
-        print(f"Error : Store.csv={len(df_store)}, store_code.txt={len(df_codes)}")
+        print(f"Error : Store_4th.csv={len(df_store)}, store_code.txt={len(df_codes)}")
 except Exception as e:
     print(f"Not Found : store_code.txt {e}")
+
 
 """
  N
@@ -86,11 +100,13 @@ value of mesh
 7 8 9
 """
 
+# === 3次メッシュ人口 ===
 print("input mesh population...")
 for i in range(1, 10):
     col = f"メッシュ{i}"
     new_col = f"メッシュ{i}_人口"
-    df_store[new_col] = df_store[col].apply(get_population_from_mesh)
+    if col in df_store.columns:
+        df_store[new_col] = df_store[col].apply(lambda x: get_population_from_mesh(x, mesh_type="3rd"))
 
 for col in [f"メッシュ{i}_人口" for i in range(1, 10)]:
     df_store[col] = pd.to_numeric(df_store[col], errors="coerce").fillna(0)
@@ -99,6 +115,22 @@ for col in [f"メッシュ{i}_人口" for i in range(1, 10)]:
 df_store["周辺合計人口"] = df_store[[f"メッシュ{i}_人口" for i in 周辺メッシュ]].sum(axis=1)
 df_store["合計人口"] = df_store[[f"メッシュ{i}_人口" for i in range(1, 10)]].sum(axis=1)
 
+# === 4次メッシュ人口 ===
+print("input 4th mesh population...")
+for i in range(1, 10):
+    col = f"4th_メッシュ{i}"
+    new_col = f"4th_メッシュ{i}_人口"
+    if col in df_store.columns:
+        df_store[new_col] = df_store[col].apply(lambda x: get_population_from_mesh(x, mesh_type="4th"))
+
+for col in [f"4th_メッシュ{i}_人口" for i in range(1, 10)]:
+    df_store[col] = pd.to_numeric(df_store[col], errors="coerce").fillna(0)
+
+df_store["4th_周辺合計人口"] = df_store[[f"4th_メッシュ{i}_人口" for i in 周辺メッシュ]].sum(axis=1)
+df_store["4th_合計人口"] = df_store[[f"4th_メッシュ{i}_人口" for i in range(1, 10)]].sum(axis=1)
+print("input 4th mesh complete")
+
+# === 営業時間 ===
 time_cols = ["開店時間(平)", "閉店時間(平)", "開店時間(特)", "閉店時間(特)"]
 
 def convert_time(value):
@@ -143,6 +175,7 @@ for mode in ["(平)", "(特)"]:
 
 print("change datetime")
 
+# === 昼間/夜間割合 ===
 if all(col in df_store.columns for col in ["市区別_夜間人口", "市区別_昼間人口"]):
     df_store["昼間/夜間割合"] = df_store.apply(
         lambda x: round((x["市区別_昼間人口"] / x["市区別_夜間人口"]) * 100, 1)
@@ -153,6 +186,8 @@ if all(col in df_store.columns for col in ["市区別_夜間人口", "市区別_
 else:
     print("Not Found : daytime or nighttime")
 
+
+# === 型変換 ===
 expected_dtypes = {
     "書店コード": "int",
     "書店名": "object",
@@ -179,6 +214,12 @@ for i in range(1, 10):
 expected_dtypes["周辺合計人口"] = "int"
 expected_dtypes["合計人口"] = "int"
 
+for i in range(1, 10):
+    expected_dtypes[f"4th_メッシュ{i}"] = "int"
+    expected_dtypes[f"4th_メッシュ{i}_人口"] = "int"
+expected_dtypes["4th_周辺合計人口"] = "int"
+expected_dtypes["4th_合計人口"] = "int"
+
 def fix_dtype(series, target_type):
     if target_type == "int":
         return pd.to_numeric(series, errors="coerce").fillna(0).astype(int)
@@ -200,6 +241,7 @@ for col, t in expected_dtypes.items():
 
 print("check complete")
 
+# === 出力 ===
 output_csv = os.path.join(BASE_DIR, "data", "Store_mesh.csv")
 output_parquet = os.path.join(BASE_DIR, "data", "Store_mesh.parquet")
 

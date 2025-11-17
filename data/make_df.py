@@ -5,10 +5,10 @@ from lib.prepro import *
 
 print("loading data...")
 df_raw = pd.read_parquet('data.parquet')
-store_detail = pd.read_csv('store_detail.csv')
+store_detail = pd.read_csv('../eda_2/data/Store_mesh.csv')
 for col in ['開店時間(平)', '閉店時間(平)', '開店時間(特)', '閉店時間(特)']:
     if col in store_detail.columns:
-        store_detail[col] = pd.to_datetime(store_detail[col], format='%H:%M')
+        store_detail[col] = pd.to_datetime(store_detail[col], format='%H:%M:%S')
 print("complete!")
 
 print("=== データの形状 ===")
@@ -24,7 +24,7 @@ print()
 
 print("###after cleaning###")
 df = df_raw.copy()
-df = clean_df(df, store_detail, remove_series=True)
+df = clean_df(df, store_detail)
 
 print("=== データの形状 ===")
 print(df.shape)

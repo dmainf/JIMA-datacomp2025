@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     print("\n=== Preparing Dataset ===")
     label_columns = ['書店コード', '出版社', '著者名', '大分類', '中分類', '小分類']
-    NUM_EPOCHS = 60
+    NUM_EPOCHS = 250
     BATCH_SIZE = 64
     sales_percentile = 0.2
     dataset, encoders = prepare_dataset(
@@ -37,7 +37,12 @@ if __name__ == '__main__':
     print("Saved encoders to data/encoders.pkl")
 
     print("\n=== Creating GluonTS Dataset ===")
-    train_list, test_list = create_gluonts_dataset(dataset, CONTEXT_LENGTH, PREDICTION_LENGTH)
+    train_list, test_list = create_gluonts_dataset(
+        dataset,
+        CONTEXT_LENGTH,
+        PREDICTION_LENGTH,
+        #use_bidirectional=True
+    )
     print(f"Train series: {len(train_list)}")
     print(f"Test series: {len(test_list)}")
 
@@ -59,8 +64,8 @@ if __name__ == '__main__':
         dropout_rate=0.15,
         lr=LEARNING_RATE,
         batch_size=BATCH_SIZE,
-        ###8epocで改善しなかったら強制終了
-        patience=8,
+        ###改善しなかったら早期終了
+        patience=4,
         ###
         trainer_kwargs={
             "max_epochs": NUM_EPOCHS,
