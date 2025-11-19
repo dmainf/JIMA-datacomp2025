@@ -1,0 +1,402 @@
+
+================================================================================
+EXPERIMENT CONFIGURATION
+================================================================================
+HIDDEN_DIM: 64
+AUGMENTATION_FACTOR: 20
+================================================================================
+
+
+=== Loading Dataset ===
+Dataset Shape: (404340, 60)
+書店コード                              int32
+書名                                 int32
+日付                        datetime64[ns]
+POS販売冊数                            int32
+出版社                                int32
+著者名                                int32
+大分類                                int32
+中分類                                int32
+小分類                                int32
+本体価格                             float32
+開店時間(平)                   datetime64[ns]
+閉店時間(平)                   datetime64[ns]
+営業時間(平)                            int32
+開店時間(特)                   datetime64[ns]
+閉店時間(特)                   datetime64[ns]
+営業時間(特)                            int32
+駅構内                                int32
+複合施設                               int32
+独立店舗                               int32
+n_slice                            int64
+month_in_year_sin                float32
+month_in_year_cos                float32
+week_in_year_sin                 float32
+week_in_year_cos                 float32
+day_in_year_sin                  float32
+day_in_year_cos                  float32
+day_in_month                       int32
+week_in_month_sin                float32
+week_in_month_cos                float32
+day_in_month_sin                 float32
+day_in_month_cos                 float32
+day_in_week_sin                  float32
+day_in_week_cos                  float32
+is_weekend                         int32
+quarter                            int32
+mesh_pop_center                  float32
+mesh_pop_neighbors_avg           float32
+mesh_pop_gradient_NS             float32
+mesh_pop_gradient_EW             float32
+POS販売冊数_roll_mean3               float32
+POS販売冊数_roll_std3                float32
+POS販売冊数_roll_max3                float32
+POS販売冊数_roll_mean5               float32
+POS販売冊数_roll_std5                float32
+POS販売冊数_roll_max5                float32
+POS販売冊数_roll_mean7               float32
+POS販売冊数_roll_std7                float32
+POS販売冊数_roll_max7                float32
+POS販売冊数_roll_mean8               float32
+POS販売冊数_roll_std8                float32
+POS販売冊数_roll_max8                float32
+POS販売冊数_roll_mean16              float32
+POS販売冊数_roll_std16               float32
+POS販売冊数_roll_max16               float32
+POS販売冊数_roll_mean32              float32
+POS販売冊数_roll_std32               float32
+POS販売冊数_roll_max32               float32
+POS販売冊数_roll_mean64              float32
+POS販売冊数_roll_std64               float32
+POS販売冊数_roll_max64               float32
+dtype: object
+Using device: mps
+
+=== Creating Slice Dataset ===
+Processing 24760 samples (with 20x augmentation)...
+Total series: 24760
+Train series: 19808
+Test series: 4952
+
+=== Feature Counts ===
+Static real: 10
+Dynamic real: 80
+Past dynamic: 80
+Static categorical: 7
+Sample shapes:
+  feat_dynamic_real: (18, 80)
+  past_feat_dynamic_real: (21, 80)
+
+=== Training ===
+
+Sanity Checking: |          | 0/? [00:00<?, ?it/s]
+Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]
+Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]
+Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:00<00:00,  2.23it/s]
+Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:00<00:00,  4.05it/s]
+                                                                           
+
+Training: |          | 0/? [00:00<?, ?it/s]
+Training: |          | 0/? [00:00<?, ?it/s]
+Epoch 0: |          | 0/? [00:00<?, ?it/s] 
+Epoch 0: |          | 1/? [00:00<00:00,  1.07it/s]
+Epoch 0: |          | 1/? [00:00<00:00,  1.07it/s, v_num=27]
+Epoch 0: |          | 2/? [00:01<00:00,  1.88it/s, v_num=27]
+Epoch 0: |          | 2/? [00:01<00:00,  1.88it/s, v_num=27]
+Epoch 0: |          | 3/? [00:01<00:00,  2.60it/s, v_num=27]
+Epoch 0: |          | 3/? [00:01<00:00,  2.60it/s, v_num=27]
+Epoch 0: |          | 4/? [00:01<00:00,  3.24it/s, v_num=27]
+Epoch 0: |          | 4/? [00:01<00:00,  3.24it/s, v_num=27]
+Epoch 0: |          | 5/? [00:01<00:00,  3.75it/s, v_num=27]
+Epoch 0: |          | 5/? [00:01<00:00,  3.75it/s, v_num=27]
+Epoch 0: |          | 6/? [00:01<00:00,  4.12it/s, v_num=27]
+Epoch 0: |          | 6/? [00:01<00:00,  4.12it/s, v_num=27]
+Epoch 0: |          | 7/? [00:01<00:00,  4.56it/s, v_num=27]
+Epoch 0: |          | 7/? [00:01<00:00,  4.56it/s, v_num=27]
+Epoch 0: |          | 8/? [00:01<00:00,  4.90it/s, v_num=27]
+Epoch 0: |          | 8/? [00:01<00:00,  4.90it/s, v_num=27]
+Epoch 0: |          | 9/? [00:01<00:00,  5.18it/s, v_num=27]
+Epoch 0: |          | 9/? [00:01<00:00,  5.18it/s, v_num=27]
+Epoch 0: |          | 10/? [00:01<00:00,  5.41it/s, v_num=27]
+Epoch 0: |          | 10/? [00:01<00:00,  5.41it/s, v_num=27]
+Epoch 0: |          | 11/? [00:01<00:00,  5.68it/s, v_num=27]
+Epoch 0: |          | 11/? [00:01<00:00,  5.68it/s, v_num=27]
+Epoch 0: |          | 12/? [00:02<00:00,  5.91it/s, v_num=27]
+Epoch 0: |          | 12/? [00:02<00:00,  5.91it/s, v_num=27]
+Epoch 0: |          | 13/? [00:02<00:00,  6.09it/s, v_num=27]
+Epoch 0: |          | 13/? [00:02<00:00,  6.09it/s, v_num=27]
+Epoch 0: |          | 14/? [00:02<00:00,  6.19it/s, v_num=27]
+Epoch 0: |          | 14/? [00:02<00:00,  6.19it/s, v_num=27]
+Epoch 0: |          | 15/? [00:02<00:00,  6.30it/s, v_num=27]
+Epoch 0: |          | 15/? [00:02<00:00,  6.30it/s, v_num=27]
+Epoch 0: |          | 16/? [00:02<00:00,  6.50it/s, v_num=27]
+Epoch 0: |          | 16/? [00:02<00:00,  6.50it/s, v_num=27]
+Epoch 0: |          | 17/? [00:02<00:00,  6.69it/s, v_num=27]
+Epoch 0: |          | 17/? [00:02<00:00,  6.69it/s, v_num=27]
+Epoch 0: |          | 18/? [00:02<00:00,  6.84it/s, v_num=27]
+Epoch 0: |          | 18/? [00:02<00:00,  6.84it/s, v_num=27]
+Epoch 0: |          | 19/? [00:02<00:00,  6.99it/s, v_num=27]
+Epoch 0: |          | 19/? [00:02<00:00,  6.99it/s, v_num=27]
+Epoch 0: |          | 20/? [00:02<00:00,  7.09it/s, v_num=27]
+Epoch 0: |          | 20/? [00:02<00:00,  7.09it/s, v_num=27]
+Epoch 0: |          | 21/? [00:02<00:00,  7.04it/s, v_num=27]
+Epoch 0: |          | 21/? [00:02<00:00,  7.04it/s, v_num=27]
+Epoch 0: |          | 22/? [00:03<00:00,  7.17it/s, v_num=27]
+Epoch 0: |          | 22/? [00:03<00:00,  7.16it/s, v_num=27]
+Epoch 0: |          | 23/? [00:03<00:00,  7.19it/s, v_num=27]
+Epoch 0: |          | 23/? [00:03<00:00,  7.19it/s, v_num=27]
+Epoch 0: |          | 24/? [00:03<00:00,  7.29it/s, v_num=27]
+Epoch 0: |          | 24/? [00:03<00:00,  7.29it/s, v_num=27]
+Epoch 0: |          | 25/? [00:03<00:00,  7.38it/s, v_num=27]
+Epoch 0: |          | 25/? [00:03<00:00,  7.38it/s, v_num=27]
+Epoch 0: |          | 26/? [00:03<00:00,  7.48it/s, v_num=27]
+Epoch 0: |          | 26/? [00:03<00:00,  7.48it/s, v_num=27]
+Epoch 0: |          | 27/? [00:03<00:00,  7.56it/s, v_num=27]
+Epoch 0: |          | 27/? [00:03<00:00,  7.56it/s, v_num=27]
+Epoch 0: |          | 28/? [00:03<00:00,  7.65it/s, v_num=27]
+Epoch 0: |          | 28/? [00:03<00:00,  7.64it/s, v_num=27]
+Epoch 0: |          | 29/? [00:03<00:00,  7.67it/s, v_num=27]
+Epoch 0: |          | 29/? [00:03<00:00,  7.67it/s, v_num=27]
+Epoch 0: |          | 30/? [00:03<00:00,  7.72it/s, v_num=27]
+Epoch 0: |          | 30/? [00:03<00:00,  7.72it/s, v_num=27]
+Epoch 0: |          | 31/? [00:03<00:00,  7.80it/s, v_num=27]
+Epoch 0: |          | 31/? [00:03<00:00,  7.80it/s, v_num=27]
+Epoch 0: |          | 32/? [00:04<00:00,  7.90it/s, v_num=27]
+Epoch 0: |          | 32/? [00:04<00:00,  7.90it/s, v_num=27]
+Epoch 0: |          | 33/? [00:04<00:00,  7.96it/s, v_num=27]
+Epoch 0: |          | 33/? [00:04<00:00,  7.96it/s, v_num=27]
+Epoch 0: |          | 34/? [00:04<00:00,  8.02it/s, v_num=27]
+Epoch 0: |          | 34/? [00:04<00:00,  8.02it/s, v_num=27]
+Epoch 0: |          | 35/? [00:04<00:00,  8.06it/s, v_num=27]
+Epoch 0: |          | 35/? [00:04<00:00,  8.06it/s, v_num=27]
+Epoch 0: |          | 36/? [00:04<00:00,  8.11it/s, v_num=27]
+Epoch 0: |          | 36/? [00:04<00:00,  8.11it/s, v_num=27]
+Epoch 0: |          | 37/? [00:04<00:00,  8.18it/s, v_num=27]
+Epoch 0: |          | 37/? [00:04<00:00,  8.18it/s, v_num=27]
+Epoch 0: |          | 38/? [00:04<00:00,  8.17it/s, v_num=27]
+Epoch 0: |          | 38/? [00:04<00:00,  8.17it/s, v_num=27]
+Epoch 0: |          | 39/? [00:04<00:00,  8.15it/s, v_num=27]
+Epoch 0: |          | 39/? [00:04<00:00,  8.15it/s, v_num=27]
+Epoch 0: |          | 40/? [00:04<00:00,  8.13it/s, v_num=27]
+Epoch 0: |          | 40/? [00:04<00:00,  8.13it/s, v_num=27]
+Epoch 0: |          | 41/? [00:05<00:00,  8.10it/s, v_num=27]
+Epoch 0: |          | 41/? [00:05<00:00,  8.10it/s, v_num=27]
+Epoch 0: |          | 42/? [00:05<00:00,  8.15it/s, v_num=27]
+Epoch 0: |          | 42/? [00:05<00:00,  8.15it/s, v_num=27]
+Epoch 0: |          | 43/? [00:05<00:00,  8.21it/s, v_num=27]
+Epoch 0: |          | 43/? [00:05<00:00,  8.21it/s, v_num=27]
+Epoch 0: |          | 44/? [00:05<00:00,  8.11it/s, v_num=27]
+Epoch 0: |          | 44/? [00:05<00:00,  8.11it/s, v_num=27]
+Epoch 0: |          | 45/? [00:05<00:00,  8.12it/s, v_num=27]
+Epoch 0: |          | 45/? [00:05<00:00,  8.12it/s, v_num=27]
+Epoch 0: |          | 46/? [00:05<00:00,  8.14it/s, v_num=27]
+Epoch 0: |          | 46/? [00:05<00:00,  8.14it/s, v_num=27]
+Epoch 0: |          | 47/? [00:05<00:00,  8.16it/s, v_num=27]
+Epoch 0: |          | 47/? [00:05<00:00,  8.16it/s, v_num=27]
+Epoch 0: |          | 48/? [00:05<00:00,  8.20it/s, v_num=27]
+Epoch 0: |          | 48/? [00:05<00:00,  8.20it/s, v_num=27]
+Epoch 0: |          | 49/? [00:05<00:00,  8.25it/s, v_num=27]
+Epoch 0: |          | 49/? [00:05<00:00,  8.25it/s, v_num=27]
+Epoch 0: |          | 50/? [00:06<00:00,  8.30it/s, v_num=27]
+Epoch 0: |          | 50/? [00:06<00:00,  8.30it/s, v_num=27]
+
+Validation: |          | 0/? [00:00<?, ?it/s][A
+
+Validation: |          | 0/? [00:00<?, ?it/s][A
+
+Validation DataLoader 0: |          | 0/? [00:00<?, ?it/s][A
+
+Validation DataLoader 0: |          | 1/? [00:00<00:00, 40.10it/s][A
+
+Validation DataLoader 0: |          | 2/? [00:00<00:00, 30.51it/s][A
+
+Validation DataLoader 0: |          | 3/? [00:00<00:00, 30.48it/s][A
+
+Validation DataLoader 0: |          | 4/? [00:00<00:00, 28.85it/s][A
+
+Validation DataLoader 0: |          | 5/? [00:00<00:00, 27.88it/s][A
+
+Validation DataLoader 0: |          | 6/? [00:00<00:00, 27.22it/s][A
+
+Validation DataLoader 0: |          | 7/? [00:00<00:00, 27.00it/s][A
+
+Validation DataLoader 0: |          | 8/? [00:00<00:00, 26.93it/s][A
+
+Validation DataLoader 0: |          | 9/? [00:00<00:00, 26.89it/s][A
+
+Validation DataLoader 0: |          | 10/? [00:00<00:00, 26.89it/s][A
+
+Validation DataLoader 0: |          | 11/? [00:00<00:00, 26.93it/s][A
+
+Validation DataLoader 0: |          | 12/? [00:00<00:00, 26.98it/s][A
+
+Validation DataLoader 0: |          | 13/? [00:00<00:00, 26.98it/s][A
+
+Validation DataLoader 0: |          | 14/? [00:00<00:00, 27.02it/s][A
+
+Validation DataLoader 0: |          | 15/? [00:00<00:00, 27.01it/s][A
+
+Validation DataLoader 0: |          | 16/? [00:00<00:00, 27.06it/s][A
+
+Validation DataLoader 0: |          | 17/? [00:00<00:00, 27.21it/s][A
+
+Validation DataLoader 0: |          | 18/? [00:00<00:00, 26.97it/s][A
+
+Validation DataLoader 0: |          | 19/? [00:00<00:00, 26.54it/s][A
+
+Validation DataLoader 0: |          | 20/? [00:00<00:00, 25.90it/s][A
+
+Validation DataLoader 0: |          | 21/? [00:00<00:00, 25.99it/s][A
+
+Validation DataLoader 0: |          | 22/? [00:00<00:00, 26.04it/s][A
+
+Validation DataLoader 0: |          | 23/? [00:00<00:00, 26.05it/s][A
+
+Validation DataLoader 0: |          | 24/? [00:00<00:00, 25.47it/s][A
+
+Validation DataLoader 0: |          | 25/? [00:00<00:00, 25.28it/s][A
+
+Validation DataLoader 0: |          | 26/? [00:01<00:00, 25.26it/s][A
+
+Validation DataLoader 0: |          | 27/? [00:01<00:00, 25.29it/s][A
+
+Validation DataLoader 0: |          | 28/? [00:01<00:00, 25.32it/s][A
+
+Validation DataLoader 0: |          | 29/? [00:01<00:00, 25.33it/s][A
+
+Validation DataLoader 0: |          | 30/? [00:01<00:00, 25.38it/s][A
+
+Validation DataLoader 0: |          | 31/? [00:01<00:00, 25.32it/s][A
+
+Validation DataLoader 0: |          | 32/? [00:01<00:00, 25.49it/s][A
+
+Validation DataLoader 0: |          | 33/? [00:01<00:00, 25.55it/s][A
+
+Validation DataLoader 0: |          | 34/? [00:01<00:00, 25.73it/s][A
+
+Validation DataLoader 0: |          | 35/? [00:01<00:00, 25.83it/s][A
+
+Validation DataLoader 0: |          | 36/? [00:01<00:00, 25.87it/s][A
+
+Validation DataLoader 0: |          | 37/? [00:01<00:00, 25.83it/s][A
+
+Validation DataLoader 0: |          | 38/? [00:01<00:00, 25.85it/s][A
+
+Validation DataLoader 0: |          | 39/? [00:01<00:00, 25.84it/s][A
+
+Validation DataLoader 0: |          | 40/? [00:01<00:00, 25.84it/s][A
+
+Validation DataLoader 0: |          | 41/? [00:01<00:00, 25.88it/s][A
+
+Validation DataLoader 0: |          | 42/? [00:01<00:00, 25.90it/s][A
+
+Validation DataLoader 0: |          | 43/? [00:01<00:00, 25.91it/s][A
+
+Validation DataLoader 0: |          | 44/? [00:01<00:00, 25.90it/s][A
+
+Validation DataLoader 0: |          | 45/? [00:01<00:00, 25.91it/s][A
+
+Validation DataLoader 0: |          | 46/? [00:01<00:00, 25.97it/s][A
+
+Validation DataLoader 0: |          | 47/? [00:01<00:00, 25.98it/s][A
+
+Validation DataLoader 0: |          | 48/? [00:01<00:00, 25.98it/s][A
+
+Validation DataLoader 0: |          | 49/? [00:01<00:00, 26.01it/s][A
+
+Validation DataLoader 0: |          | 50/? [00:01<00:00, 26.02it/s][A
+
+Validation DataLoader 0: |          | 51/? [00:01<00:00, 26.03it/s][A
+
+Validation DataLoader 0: |          | 52/? [00:01<00:00, 26.04it/s][A
+
+Validation DataLoader 0: |          | 53/? [00:02<00:00, 26.08it/s][A
+
+Validation DataLoader 0: |          | 54/? [00:02<00:00, 26.09it/s][A
+
+Validation DataLoader 0: |          | 55/? [00:02<00:00, 26.07it/s][A
+
+Validation DataLoader 0: |          | 56/? [00:02<00:00, 26.10it/s][A
+
+Validation DataLoader 0: |          | 57/? [00:02<00:00, 26.10it/s][A
+
+Validation DataLoader 0: |          | 58/? [00:02<00:00, 26.10it/s][A
+
+Validation DataLoader 0: |          | 59/? [00:02<00:00, 26.10it/s][A
+
+Validation DataLoader 0: |          | 60/? [00:02<00:00, 26.11it/s][A
+
+Validation DataLoader 0: |          | 61/? [00:02<00:00, 26.14it/s][A
+
+Validation DataLoader 0: |          | 62/? [00:02<00:00, 26.16it/s][A
+
+Validation DataLoader 0: |          | 63/? [00:02<00:00, 26.16it/s][A
+
+Validation DataLoader 0: |          | 64/? [00:02<00:00, 26.16it/s][A
+
+Validation DataLoader 0: |          | 65/? [00:02<00:00, 26.16it/s][A
+
+Validation DataLoader 0: |          | 66/? [00:02<00:00, 26.16it/s][A
+
+Validation DataLoader 0: |          | 67/? [00:02<00:00, 26.17it/s][A
+
+Validation DataLoader 0: |          | 68/? [00:02<00:00, 26.14it/s][A
+
+Validation DataLoader 0: |          | 69/? [00:02<00:00, 26.16it/s][A
+
+Validation DataLoader 0: |          | 70/? [00:02<00:00, 26.17it/s][A
+
+Validation DataLoader 0: |          | 71/? [00:02<00:00, 26.17it/s][A
+
+Validation DataLoader 0: |          | 72/? [00:02<00:00, 26.17it/s][A
+
+Validation DataLoader 0: |          | 73/? [00:02<00:00, 26.20it/s][A
+
+Validation DataLoader 0: |          | 74/? [00:02<00:00, 26.13it/s][A
+
+Validation DataLoader 0: |          | 75/? [00:02<00:00, 26.13it/s][A
+
+Validation DataLoader 0: |          | 76/? [00:02<00:00, 26.14it/s][A
+
+Validation DataLoader 0: |          | 77/? [00:02<00:00, 26.20it/s][A
+
+Validation DataLoader 0: |          | 78/? [00:03<00:00, 22.68it/s][A
+
+                                                                   [A
+Epoch 0: |          | 50/? [00:09<00:00,  5.25it/s, v_num=27, val_loss=1.760]
+Epoch 0: |          | 50/? [00:09<00:00,  5.25it/s, v_num=27, val_loss=1.760, train_loss=1.800]
+Epoch 0: |          | 50/? [00:09<00:00,  5.11it/s, v_num=27, val_loss=1.760, train_loss=1.800]
+
+=== Evaluation ===
+
+============================================================
+Performance Metrics
+============================================================
+MASE      : 0.8507
+RMSE      : 6.5322
+MAPE      : 0.5067
+sMAPE     : 0.5729
+Error: 0.51%
+
+Model saved to: model/
+Metrics saved to: score/
+============================================================
+GPU available: True (mps), used: True
+TPU available: False, using: 0 TPU cores
+HPU available: False, using: 0 HPUs
+
+  | Name  | Type                           | Params | Mode  | In sizes                                                                           | Out sizes                     
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+0 | model | TemporalFusionTransformerModel | 2.3 M  | train | [[1, 56], [1, 56], [1, 1], [1, 7], [1, 70, 3], [1, 70, 0], [1, 56, 0], [1, 56, 0]] | [[[1, 14, 9]], [1, 1], [1, 1]]
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2.3 M     Trainable params
+0         Non-trainable params
+2.3 M     Total params
+9.245     Total estimated model params size (MB)
+266       Modules in train mode
+0         Modules in eval mode
+Epoch 0, global step 50: 'val_loss' reached 1.76186 (best 1.76186), saving model to '/Users/dmainf/mac/data_comp/eda/lightning_logs/version_27/checkpoints/epoch=0-step=50.ckpt' as top 1
+`Trainer.fit` stopped: `max_epochs=1` reached.
+
+Running evaluation: 0it [00:00, ?it/s]
+Running evaluation: 4952it [00:00, 20275.81it/s]
