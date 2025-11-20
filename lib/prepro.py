@@ -190,7 +190,7 @@ def normalize_title(df):
             if 'ＢＯＸ' in title_no_space:
                 return 'ＯＮＥＰＩＥＣＥ_BOX_0'
             # 本編
-            match = re.search(r'ＯＮＥＰＩＥＣＥ　+([０-９\d]+)$', title)
+            match = re.search(r'ＯＮＥＰＩＥＣＥ([０-９\d]+)$', title_no_space)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'ＯＮＥＰＩＥＣＥ_original_{vol}'
@@ -354,12 +354,11 @@ def normalize_title(df):
             # 関連書籍
             if any(x in title for x in ['公式ガイド', '公式問題集', '英雄風雲録', '水晶玉子', 'ビジュアル', '英傑列紀']):
                 return 'キングダム_関連書籍_0'
-            # 本編（"キングダム　"で厳密にマッチング）
-            if title_no_space.startswith('キングダム　'):
-                match = re.search(r'キングダム　+([０-９\d]+)', title)
-                if match:
-                    vol = match.group(1).translate(trans_table)
-                    return f'キングダム_original_{vol}'
+            # 本編
+            match = re.search(r'キングダム([０-９\d]+)$', title_no_space)
+            if match:
+                vol = match.group(1).translate(trans_table)
+                return f'キングダム_original_{vol}'
             return 'キングダム_original_0'
         # 11. 【推しの子】
         if '【推しの子】' in title_no_space:
@@ -518,7 +517,7 @@ def normalize_title(df):
             return '地縛少年花子くん_original_0'
         # 20. マッシュル
         if 'マッシュル' in title_no_space:
-            match = re.search(r'マッシュル[　\s]+([０-９\d]+)', title)
+            match = re.search(r'([０-９\d]+)$', title_no_space)
             if match:
                 vol = match.group(1).translate(trans_table)
                 return f'マッシュル_original_{vol}'
@@ -1115,18 +1114,22 @@ def normalize_title(df):
             return '初×婚_original_0'
         # 75. はたらく細胞
         if 'はたらく細胞' in title_no_space:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
+            # シリーズ・派生作品を除外
+            if any(x in title_no_space for x in ['おくすり', '猫', 'BLACK', 'LADY', 'BABY', 'WHITE', '人体のふしぎ', 'ウイルス', '細菌図鑑']):
+                return 'はたらく細胞_original_0'
+            match = re.search(r'([０-９\d]+)$', title_no_space)
             if match:
-                vol = match.group(0).translate(trans_table)
+                vol = match.group(1).translate(trans_table)
                 return f'はたらく細胞_original_{vol}'
             return 'はたらく細胞_original_0'
         # 76. 文豪ストレイドッグス
         if '文豪ストレイドッグス' in title_no_space:
-            title = re.sub(r'^特装版　', '', title)
-            match = re.search(r'[０-９\d]+', title)
+            # スピンオフ・関連作品を除外
+            if any(x in title_no_space for x in ['わん', '太宰', '中也', '公式', 'アンソロジー', 'BEAST', 'DEADAPPLE']):
+                return '文豪ストレイドッグス_original_0'
+            match = re.search(r'([０-９\d]+)$', title_no_space)
             if match:
-                vol = match.group(0).translate(trans_table)
+                vol = match.group(1).translate(trans_table)
                 return f'文豪ストレイドッグス_original_{vol}'
             return '文豪ストレイドッグス_original_0'
         # 77. まんがで！にゃんこ大戦争
@@ -2724,55 +2727,41 @@ def normalize_title(df):
     return df
 
 
-def remove_volume_number(df, remove_series=False):
+def remove_volume(df):
     """
-    書名から「_巻数」部分を除去する
-    前提: normalize_title()で「作品_シリーズ_巻数」形式に統一されていること
-
-    引数:
-        df: DataFrame
-        remove_series: Trueの場合、シリーズ名も除去する
+    書名から一番右の「_」以降を除去する
+    「_」がなければそのまま返す
 
     例:
-        remove_series=False:
-            「作品_シリーズ_巻数」→「作品_シリーズ」
-            「作品_巻数」→「作品」
-            「作品」→「作品」
-        remove_series=True:
-            「作品_シリーズ_巻数」→「作品」
-            「作品_巻数」→「作品」
-            「作品」→「作品」
+        「作品_シリーズ_巻数」→「作品_シリーズ」(remove volume-number)
+        「作品_巻数」→「作品」(remove series)
+        「作品」→「作品」(変更なし)
     """
+    before_counts = df['書名'].str.count('_').value_counts().to_dict()
+
     def process_volume(title):
         if pd.isna(title):
             return title
         if '_' not in title:
             return title
-        parts = title.split('_')
-        if remove_series:
-            return parts[0]
-        else:
-            if len(parts) >= 3:
-                # 最後の部分が数字（または小数点を含む数字）の場合のみ削除
-                last_part = parts[-1]
-                # 数字、小数点付き数字、またはゼロをチェック
-                if last_part.replace('.', '').isdigit() or last_part == '0':
-                    return f"{parts[0]}_{parts[1]}"
-                else:
-                    # 上・下・前編・後編などはそのまま残す
-                    return title
-            else:
-                # 2パーツの場合、最後が数字なら削除
-                last_part = parts[-1]
-                if last_part.replace('.', '').isdigit() or last_part == '0':
-                    return parts[0]
-                else:
-                    return title
+        return title.rsplit('_', 1)[0]
+
     df['書名'] = df['書名'].apply(process_volume)
+    after_counts = df['書名'].str.count('_').value_counts().to_dict()
+    count_2_to_1 = before_counts.get(2, 0)
+    count_1_to_0 = before_counts.get(1, 0)
+    if count_2_to_1 > 0 and after_counts.get(1, 0) != count_2_to_1:
+        raise ValueError(f"「_」が2つあるものの数が不整合: 処理前={count_2_to_1}, 処理後(「_」が1つ)={after_counts.get(1, 0)}")
+    if count_1_to_0 > 0 and after_counts.get(0, 0) != count_1_to_0:
+        raise ValueError(f"「_」が1つあるものの数が不整合: 処理前={count_1_to_0}, 処理後(「_」が0)={after_counts.get(0, 0)}")
+    if count_2_to_1 > 0:
+        print("You remove volume-number on '書名'")
+    if count_1_to_0 > 0:
+        print("You remove series on '書名'")
     return df
 
 
-def fill_missing_class(df):
+def fill_missingclass(df):
     isbn_classifications = {
         "978-4-09-735348-5": {"大分類": "児童", "中分類": "しかけ絵本", "小分類": "シール絵本"},  # シナぷしゅシールブック
         "978-4-09-735603-5": {"大分類": "児童", "中分類": "しかけ絵本", "小分類": "シール絵本"},  # スプラトゥーン3シールブック
@@ -2850,7 +2839,7 @@ def clean_df(df, store_detail, remove_series=False):
     df = normalize_title(df)
 
     delete_space_columns = df.select_dtypes(include=['object']).columns.tolist()
-    df = fill_missing_class(df)
+    df = fill_missingclass(df)
     df = merge_store_detail(df, store_detail)
     df = delete_space(df, delete_space_columns)
     #df = remove_volume_number(df, remove_series)
