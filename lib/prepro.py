@@ -1,5 +1,6 @@
 import pandas as pd
 
+"""
 def clean_time(df):
     df['日付'] = pd.to_datetime(df['日付']).dt.normalize()
     df['月'] = df['日付'].dt.month
@@ -10,6 +11,7 @@ def clean_time(df):
     other_cols = [col for col in df.columns if col not in time_cols]
     df = df[time_cols + other_cols]
     return df
+"""
 
 
 def delete_space(df, columns):
@@ -2687,6 +2689,329 @@ def normalize_title(df):
                     return f'ＮＨＫ_連続テレビ小説_{volume}'
                 return 'ＮＨＫ_連続テレビ小説_0'
 
+        # 37. 英検シリーズ
+        if '英検' in title_no_space:
+            # 級を抽出
+            kyuu = None
+            if '準１級' in title or '準1級' in title:
+                kyuu = '準1級'
+            elif '準２級' in title or '準2級' in title:
+                kyuu = '準2級'
+            elif '１級' in title or '1級' in title:
+                kyuu = '1級'
+            elif '２級' in title or '2級' in title:
+                kyuu = '2級'
+            elif '３級' in title or '3級' in title:
+                kyuu = '3級'
+            elif '４級' in title or '4級' in title:
+                kyuu = '4級'
+            elif '５級' in title or '5級' in title:
+                kyuu = '5級'
+            if kyuu:
+                return f'英検_{kyuu}_0'
+            return '英検_0'
+
+        # 38. 簿記
+        if '簿記' in title_no_space:
+            if '３級' in title or '3級' in title:
+                return '簿記_3級_0'
+            elif '２級' in title or '2級' in title:
+                return '簿記_2級_0'
+            elif '１級' in title or '1級' in title:
+                return '簿記_1級_0'
+            return '簿記_0'
+
+        # 39. FP (ファイナンシャルプランナー)
+        if 'ＦＰ' in title_no_space or 'FP' in title_no_space:
+            if '３級' in title or '3級' in title:
+                return 'ＦＰ_3級_0'
+            elif '２級' in title or '2級' in title:
+                return 'ＦＰ_2級_0'
+            elif '１級' in title or '1級' in title:
+                return 'ＦＰ_1級_0'
+            return 'ＦＰ_0'
+
+        # 40. SPI
+        if 'ＳＰＩ' in title_no_space or 'SPI' in title_no_space:
+            return 'ＳＰＩ_0'
+
+        # 41. 宅建
+        if '宅建' in title_no_space:
+            return '宅建_0'
+
+        # 42. TOEIC
+        if 'ＴＯＥＩＣ' in title_no_space or 'TOEIC' in title_no_space:
+            # 巻数を抽出
+            match = re.search(r'([０-９\d]+)$', title_no_space)
+            if match:
+                vol = match.group(1).translate(trans_table)
+                return f'ＴＯＥＩＣ_original_{vol}'
+            return 'ＴＯＥＩＣ_0'
+
+        # 43. まっぷるシリーズ
+        if 'まっぷる' in title_no_space:
+            # 年度表記と「まっぷる」を除去
+            title_clean = re.sub(r"^['']?[０-９\d]{2,4}", '', title)
+            title_clean = re.sub(r'^まっぷる', '', title_clean).strip()
+            # 地域名を抽出
+            if title_clean:
+                return f'まっぷる_{title_clean}_0'
+            return 'まっぷる_0'
+
+        # 44. るるぶシリーズ
+        if 'るるぶ' in title_no_space:
+            # 年度表記と「るるぶ」を除去
+            title_clean = re.sub(r"^['']?[０-９\d]{2,4}", '', title)
+            title_clean = re.sub(r'^るるぶ', '', title_clean).strip()
+            # 地域名/テーマを抽出
+            if title_clean:
+                return f'るるぶ_{title_clean}_0'
+            return 'るるぶ_0'
+
+        # 45. 五星三心占いシリーズ
+        if '五星三心占い' in title_no_space:
+            # タイプを抽出
+            types = ['金のイルカ座', '金のインディアン座', '金のカメレオン座', '金の時計座', '金の羅針盤座', '金の鳳凰座',
+                     '銀のイルカ座', '銀のインディアン座', '銀のカメレオン座', '銀の時計座', '銀の羅針盤座', '銀の鳳凰座']
+            for t in types:
+                if t in title:
+                    return f'五星三心占い_{t}_0'
+            return '五星三心占い_0'
+
+        # 46. 家計簿・家計ノートシリーズ
+        if '家計' in title_no_space:
+            # 年度表記を除去
+            if title.startswith("'") or title.startswith("'"):
+                return '家計簿_0'
+            return '家計簿_0'
+
+        # 47. 年賀状ソフトシリーズ
+        if '年賀状' in title_no_space or '筆ぐるめ' in title_no_space or '筆まめ' in title_no_space:
+            if '筆ぐるめ' in title:
+                return '年賀状ソフト_筆ぐるめ_0'
+            elif '筆まめ' in title:
+                return '年賀状ソフト_筆まめ_0'
+            else:
+                return '年賀状ソフト_0'
+
+        # 48. クロスワード雑誌
+        if 'クロスワード' in title_no_space:
+            # 雑誌名を特定
+            if 'メイト' in title:
+                return 'クロスワードメイト_0'
+            elif 'キング' in title:
+                return 'クロスワードキング_0'
+            elif 'フレンズ' in title:
+                return 'クロスワードフレンズ_0'
+            elif 'プラザ' in title:
+                return 'クロスワードプラザ_0'
+            elif 'ランド' in title:
+                return 'クロスワードランド_0'
+            elif 'パクロス' in title:
+                return 'クロスワードパクロス_0'
+            elif '太郎' in title:
+                return 'クロスワード太郎_0'
+            elif 'Ｄａｙ' in title or 'DAY' in title:
+                return 'クロスワードＤａｙ_0'
+            elif 'Ｏｎ' in title or 'ON' in title:
+                return 'クロスワードＯｎ_0'
+            elif 'スーパー' in title:
+                return 'スーパークロスワード_0'
+            elif 'デラックス' in title:
+                return 'デラックスクロスワード_0'
+            elif 'エンタメ' in title:
+                return 'クロスワードエンタメプラス_0'
+            else:
+                return 'クロスワード_0'
+
+        # 49. アロー＆スケルトン雑誌
+        if ('アロー' in title_no_space and 'スケルトン' in title_no_space) or 'スケルトン' in title_no_space:
+            if 'メイト' in title:
+                return 'スケルトンメイト_0'
+            elif 'セブン' in title:
+                return 'スケルトンセブン_0'
+            elif 'プラザ' in title:
+                return 'スケルトンプラザ_0'
+            elif 'ＹＯＵ' in title or 'YOU' in title:
+                return 'スケルトンＹＯＵ_0'
+            elif 'パル' in title:
+                return 'アロー＆スケルトンパル_0'
+            elif 'レディース' in title:
+                if 'ＳＰ' in title or 'SP' in title:
+                    return 'レディーススケルトンＳＰ_0'
+                else:
+                    return 'レディースアロー＆スケルトン_0'
+            else:
+                return 'アロー＆スケルトン_0'
+        elif 'アロー' in title_no_space:
+            if 'クロス' in title:
+                if 'パル' in title:
+                    return 'アロークロスパル_0'
+                elif 'ナンバーワン' in title:
+                    return 'アロークロスナンバーワン_0'
+                else:
+                    return 'アロークロス_0'
+            else:
+                return 'アロー_0'
+
+        # 50. まちがいさがし雑誌
+        if 'まちがいさがし' in title_no_space:
+            if 'メイト' in title:
+                return 'まちがいさがしメイト_0'
+            elif 'キング' in title:
+                return 'まちがいさがしキング_0'
+            elif 'パーク' in title:
+                if 'ｍｉｎｉ' in title or 'MINI' in title or 'mini' in title:
+                    return 'まちがいさがしパークｍｉｎｉ_0'
+                else:
+                    return 'まちがいさがしパーク_0'
+            elif 'ファミリー' in title:
+                return 'まちがいさがしファミリー_0'
+            elif 'フレンズ' in title:
+                return 'まちがいさがしフレンズ_0'
+            else:
+                return 'まちがいさがし_0'
+
+        # 51. ナンクロ雑誌
+        if 'ナンクロ' in title_no_space:
+            if 'メイト' in title:
+                if 'ＤＸ' in title or 'DX' in title:
+                    return 'ナンクロメイトＤＸ_0'
+                else:
+                    return 'ナンクロメイト_0'
+            elif '太郎' in title:
+                return 'ナンクロ太郎_0'
+            elif '漢字館' in title:
+                return 'ナンクロ漢字館_0'
+            elif 'プレゼント' in title:
+                return 'ナンクロプレゼント_0'
+            elif 'プラザ' in title:
+                return 'ナンクロプラザ_0'
+            elif 'オール' in title:
+                if 'ＳＰ' in title or 'SP' in title:
+                    return 'オールナンクロＳＰ_0'
+                else:
+                    return 'オールナンクロ_0'
+            elif '大きな字' in title:
+                if '難問' in title:
+                    return '大きな字の難問漢字ナンクロ_0'
+                else:
+                    return '大きな字の漢字ナンクロ_0'
+            elif 'Ｓｕｐｅｒ' in title or 'SUPER' in title:
+                return 'Ｓｕｐｅｒナンクロ_0'
+            elif '絶品' in title:
+                return '絶品ナンクロメイト_0'
+            else:
+                return 'ナンクロ_0'
+
+        # 52. てんつなぎ雑誌
+        if 'てんつなぎ' in title_no_space:
+            if 'メイト' in title:
+                return 'てんつなぎメイト_0'
+            elif 'フレンズ' in title:
+                if '漢字' in title:
+                    return '漢字てんつなぎフレンズ_0'
+                else:
+                    return 'てんつなぎフレンズ_0'
+            else:
+                return 'てんつなぎ_0'
+
+        # 53. その他パズル雑誌
+        if 'オール漢字パズル' in title_no_space:
+            return 'オール漢字パズル_0'
+        if 'ナンプレ' in title_no_space:
+            return 'ナンプレ_0'
+
+        # 54. ポケモンずかんドリル
+        if 'ポケモンずかんドリル' in title_no_space:
+            # 学年と科目を抽出
+            grade = None
+            subject = None
+            if '小学生' in title:
+                if 'アルファベ' in title:
+                    subject = 'アルファベット'
+                grade = '小学生'
+            elif '小学１年生' in title or '小1' in title or '小１' in title:
+                grade = '小1'
+                if 'かん字' in title or '漢字' in title:
+                    subject = 'かん字'
+                elif 'すう' in title or '算数' in title:
+                    subject = 'すう・ずけい'
+                elif 'たしざん' in title:
+                    subject = 'たしざん・ひきざん'
+                elif 'ひらがな' in title:
+                    subject = 'ひらがな・カタカナ'
+            elif '小学２年生' in title or '小2' in title or '小２' in title:
+                grade = '小2'
+                if 'かけ算' in title:
+                    subject = 'かけ算'
+                elif 'かん字' in title or '漢字' in title:
+                    subject = 'かん字'
+            elif '小学３年生' in title or '小3' in title or '小３' in title:
+                grade = '小3'
+                if '漢字' in title:
+                    subject = '漢字'
+
+            if grade:
+                if subject:
+                    return f'ポケモンずかんドリル_{grade}{subject}_0'
+                else:
+                    return f'ポケモンずかんドリル_{grade}_0'
+            return 'ポケモンずかんドリル_0'
+
+        # 55. ポケモン関連（コロコロイチバン増刊）
+        if 'ポケモンファン' in title_no_space and 'コロコロ' in title_no_space:
+            return 'コロコロポケモンファン_0'
+
+        # 56. ディズニー関連
+        if 'ディズニー' in title_no_space:
+            if 'ファン' in title:
+                if '増' in title or 'ＴＤＳ' in title:
+                    return 'ディズニーファン_増刊_0'
+                else:
+                    return 'ディズニーファン_0'
+            elif 'プリンセス' in title:
+                return 'ディズニープリンセス_0'
+            elif 'といっしょ' in title:
+                return 'ディズニーといっしょブック_0'
+            else:
+                return 'ディズニー_0'
+
+        # 57. 図鑑シリーズ
+        if '最強王図鑑' in title_no_space:
+            if 'ドラゴン' in title:
+                if 'フィギュア' in title:
+                    return 'ドラゴン最強王図鑑_フィギュア_0'
+                else:
+                    return 'ドラゴン最強王図鑑_0'
+            elif '動物' in title:
+                return '動物最強王図鑑_0'
+            else:
+                return '最強王図鑑_0'
+
+        # 58. だるまさんシリーズ
+        if 'だるまさん' in title_no_space:
+            if 'が' in title:
+                if 'ボード' in title:
+                    return 'だるまさんが_ボードブック_0'
+                else:
+                    return 'だるまさんが_0'
+            elif 'の' in title:
+                return 'だるまさんの_0'
+            elif 'と' in title:
+                return 'だるまさんと_0'
+            else:
+                return 'だるまさん_0'
+
+        # 59. クスノキシリーズ
+        if 'クスノキ' in title_no_space:
+            if '女神' in title:
+                return 'クスノキの女神_0'
+            elif '番人' in title:
+                return 'クスノキの番人_0'
+            else:
+                return 'クスノキ_0'
+
         # 週刊誌・月刊誌は正規化不要（括弧内の読み仮名のみ削除して返す）
         weekly_magazines = [
             # 元からあるもの（括弧なし）
@@ -2829,20 +3154,18 @@ def merge_store_detail(df, store_detail):
     return df
 
 
-def clean_df(df, store_detail, remove_series=False):
+def clean_df(df, store_detail):
     df = df.drop('Unnamed: 0', axis=1)
     df = df.dropna(subset=['出版社', '書名', '著者名', '本体価格'], how='all').copy()
 
-    df = clean_time(df)
+    #df = clean_time(df)
     df = fill_publisher_by_ISBN(df)
     df = normalize_author(df)
     df = normalize_title(df)
-
     delete_space_columns = df.select_dtypes(include=['object']).columns.tolist()
     df = fill_missingclass(df)
-    df = merge_store_detail(df, store_detail)
+    #df = merge_store_detail(df, store_detail)
     df = delete_space(df, delete_space_columns)
-    #df = remove_volume_number(df, remove_series)
 
     return df
 
