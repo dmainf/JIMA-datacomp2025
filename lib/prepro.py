@@ -3075,10 +3075,11 @@ def remove_volume(df):
     after_counts = df['書名'].str.count('_').value_counts().to_dict()
     count_2_to_1 = before_counts.get(2, 0)
     count_1_to_0 = before_counts.get(1, 0)
+    count_0_to_0 = before_counts.get(0, 0)
     if count_2_to_1 > 0 and after_counts.get(1, 0) != count_2_to_1:
         raise ValueError(f"「_」が2つあるものの数が不整合: 処理前={count_2_to_1}, 処理後(「_」が1つ)={after_counts.get(1, 0)}")
-    if count_1_to_0 > 0 and after_counts.get(0, 0) != count_1_to_0:
-        raise ValueError(f"「_」が1つあるものの数が不整合: 処理前={count_1_to_0}, 処理後(「_」が0)={after_counts.get(0, 0)}")
+    if count_1_to_0 > 0 and after_counts.get(0, 0) != count_0_to_0 + count_1_to_0:
+        raise ValueError(f"「_」が1つあるものの数が不整合: 処理前(0個)={count_0_to_0}, 処理前(1個)={count_1_to_0}, 処理後(「_」が0)={after_counts.get(0, 0)}")
     if count_2_to_1 > 0:
         print("You remove volume-number on '書名'")
     if count_1_to_0 > 0:
