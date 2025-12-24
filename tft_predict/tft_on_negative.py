@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from pytorch_lightning.loggers import CSVLogger
 import os
 import shutil
-from gluonts.torch.distributions import NegativeBinomialOutput
+from gluonts.torch.distributions import NegativeBinomialOutput, StudentTOutput
 
 plt.rcParams['font.family'] = ['Hiragino Sans', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
@@ -24,10 +24,94 @@ logging.getLogger("gluonts").setLevel(logging.ERROR)
 PREDICTION_LENGTH = 45
 CONTEXT_LENGTH = 180
 EPOC = 200
-USE_LOG_SCALE = False
+
+ALL_TITLE_PREDICT = True
 QUANTILES = [0.1, 0.25, 0.5, 0.75, 0.9]
+USE_LOG_SCALE = False
 
 static_cols = ['出版社', '著者名', '大分類', '中分類', '小分類']
+
+def add_calendar_features(df):
+    """
+    カレンダー特徴量を追加（未来も既知）
+    Sin/Cos変換を行い、時間の「周期性」を維持する
+    """
+    print("\n=== Adding Calendar Features (Cyclical & Known in Future) ===")
+
+    month_norm = (df['日付'].dt.month - 1) / 12.0
+    df['month_sin'] = np.sin(2 * np.pi * month_norm).astype(np.float32)
+    df['month_cos'] = np.cos(2 * np.pi * month_norm).astype(np.float32)
+
+    day_norm = (df['日付'].dt.day - 1) / 31.0
+    df['day_sin'] = np.sin(2 * np.pi * day_norm).astype(np.float32)
+    df['day_cos'] = np.cos(2 * np.pi * day_norm).astype(np.float32)
+
+    dow_norm = df['日付'].dt.dayofweek / 7.0
+    df['dow_sin'] = np.sin(2 * np.pi * dow_norm).astype(np.float32)
+    df['dow_cos'] = np.cos(2 * np.pi * dow_norm).astype(np.float32)
+
+    week_norm = (df['日付'].dt.isocalendar().week - 1) / 53.0
+    df['week_sin'] = np.sin(2 * np.pi * week_norm).astype(np.float32)
+    df['week_cos'] = np.cos(2 * np.pi * week_norm).astype(np.float32)
+
+    df['is_weekend'] = (df['日付'].dt.dayofweek >= 5).astype(np.float32)
+    df['is_month_start'] = (df['日付'].dt.day <= 5).astype(np.float32)
+    df['is_month_end'] = (df['日付'].dt.day >= 25).astype(np.float32)
+
+    print("Added: month_sin/cos, day_sin/cos, dow_sin/cos, week_sin/cos, flags")
+    return df
+
+def add_hazard_features(df, context_length=CONTEXT_LENGTH, prediction_length=PREDICTION_LENGTH):
+    """
+    【改良版】統計的スパイク検知機能を搭載
+    Momentum、Volatility、Statistical Spike Detection、移動平均を追加
+    """
+    print("\n=== Adding Momentum, Volatility, Spike & Rolling Mean Features ===")
+    df = df.sort_values(['書名', '日付']).reset_index(drop=True)
+    df['target_shifted'] = df.groupby('書名')['POS販売冊数'].shift(1).fillna(0)
+
+    rolling_short = df.groupby('書名')['target_shifted'].transform(lambda x: x.rolling(window=prediction_length, min_periods=1).mean())
+    rolling_long = df.groupby('書名')['target_shifted'].transform(lambda x: x.rolling(window=context_length, min_periods=1).mean())
+
+    df['momentum'] = rolling_short / (rolling_long + 1e-5)
+    df['volatility'] = df.groupby('書名')['target_shifted'].transform(lambda x: x.rolling(window=context_length, min_periods=1).std()).fillna(0)
+
+    roll_mean = df.groupby('書名')['POS販売冊数'].transform(lambda x: x.shift(1).rolling(window=context_length, min_periods=1).mean())
+    roll_std = df.groupby('書名')['POS販売冊数'].transform(lambda x: x.shift(1).rolling(window=context_length, min_periods=1).std())
+
+    z_score = (df['POS販売冊数'] - roll_mean) / (roll_std + 1e-5)
+    df['deviation_score'] = 50 + (z_score * 10)
+
+    SPIKE_DEVIATION_THRESHOLD = 75
+    df['is_spike'] = (df['deviation_score'] >= SPIKE_DEVIATION_THRESHOLD) & (df['POS販売冊数'] > 0)
+    df['last_spike_date'] = df.groupby('書名')['日付'].transform(
+        lambda x: x.where(df.loc[x.index, 'is_spike']).ffill().shift(1)
+    )
+    df['days_since_last_spike'] = (df['日付'] - df['last_spike_date']).dt.days
+    df['release_date'] = df.groupby('書名')['日付'].transform('min')
+    df['days_since_release'] = (df['日付'] - df['release_date']).dt.days
+    df['days_since_last_spike'] = df['days_since_last_spike'].fillna(df['days_since_release'])
+    df['log_momentum'] = np.log1p(df['momentum']).astype(np.float32)
+    df['log_volatility'] = np.log1p(df['volatility']).astype(np.float32)
+    df['log_days_since_last_spike'] = np.log1p(df['days_since_last_spike']).astype(np.float32)
+
+    df['log_rolling_mean_7d'] = np.log1p(
+        df.groupby('書名')['target_shifted'].transform(lambda x: x.rolling(window=7, min_periods=1).mean())
+    ).astype(np.float32)
+
+    df['log_rolling_mean_30d'] = np.log1p(
+        df.groupby('書名')['target_shifted'].transform(lambda x: x.rolling(window=30, min_periods=1).mean())
+    ).astype(np.float32)
+
+    drop_cols = [
+        'release_date', 'target_shifted', 'momentum', 'volatility',
+        'days_since_release', 'last_spike_date', 'days_since_last_spike',
+        'is_spike', 'deviation_score'
+    ]
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
+    print("Added: log_momentum, log_volatility, log_days_since_last_spike, log_rolling_mean_7d, log_rolling_mean_30d")
+    return df
+
 
 def extract_quartile_books(df):
     print("\n=== Identifying Representative Books (Quantiles) ===")
@@ -80,7 +164,23 @@ def prepare_dataset(df):
         item_id='id',
         timestamp='日付',
         freq='D',
-        static_features=static_df_formatted
+        static_features=static_df_formatted,
+        feat_dynamic_real=[
+            'month_sin', 'month_cos',
+            'day_sin', 'day_cos',
+            'dow_sin', 'dow_cos',
+            'week_sin', 'week_cos',
+            'is_weekend',
+            'is_month_start',
+            'is_month_end'
+        ],
+        past_feat_dynamic_real=[
+            'log_momentum',
+            'log_volatility',
+            'log_days_since_last_spike',
+            'log_rolling_mean_7d',
+            'log_rolling_mean_30d'
+        ]
     )
     full_dataset = list(dataset)
     print(f"Number of time series: {len(full_dataset)}")
@@ -94,7 +194,13 @@ def prepare_dataset(df):
     return full_dataset, train_dataset, cardinality
 
 
-def plot_training_history(log_dir='lightning_logs', save_path='figure/training_history.png'):
+def plot_training_history():
+    log_dir = 'lightning_logs/tft_training'
+    save_path = 'figure/training_history.png'
+    save_dir = os.path.dirname(save_path)
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+
     metrics_file = None
     if not os.path.exists(log_dir):
         print(f"Log directory not found: {log_dir}")
@@ -134,12 +240,20 @@ def plot_training_history(log_dir='lightning_logs', save_path='figure/training_h
 def train_model(train_dataset, cardinality):
     csv_logger = CSVLogger("lightning_logs", name="tft_training")
     print("\n=== Training ===")
+
+    if USE_LOG_SCALE:
+        print("Distribution: StudentTOutput (Suitable for log-transformed continuous data)")
+        distr_output = StudentTOutput()
+    else:
+        print("Distribution: NegativeBinomialOutput (Suitable for sparse count data)")
+        distr_output = NegativeBinomialOutput()
+
     estimator = TemporalFusionTransformerEstimator(
         freq="D",
         prediction_length=PREDICTION_LENGTH,
         context_length=CONTEXT_LENGTH,
         static_cardinalities=cardinality,
-        distr_output=NegativeBinomialOutput(),
+        distr_output=distr_output,
         batch_size=64,
         trainer_kwargs={
             "max_epochs": EPOC,
@@ -153,9 +267,10 @@ def train_model(train_dataset, cardinality):
     return predictor
 
 
-def process_logs(log_dir, save_path):
+def process_logs():
+    log_dir = 'lightning_logs/tft_training'
     print("\n=== Plotting Training History ===")
-    plot_training_history(log_dir, save_path)
+    plot_training_history()
     print("\n=== Cleaning up logs ===")
     if os.path.exists(log_dir):
         version_dirs = [d for d in os.listdir(log_dir) if d.startswith('version_') and os.path.isdir(os.path.join(log_dir, d))]
@@ -174,8 +289,11 @@ def process_logs(log_dir, save_path):
 
 
 def save_forecast(forecast, actual_data_log, save_path, title, use_log_scale, prediction_length, context_length):
-    start_timestamp = forecast.start_date.to_timestamp() if hasattr(forecast.start_date, 'to_timestamp') else pd.Timestamp(forecast.start_date)
+    save_dir = os.path.dirname(save_path)
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
 
+    start_timestamp = forecast.start_date.to_timestamp() if hasattr(forecast.start_date, 'to_timestamp') else pd.Timestamp(forecast.start_date)
     history_end_date = start_timestamp - pd.Timedelta(days=1)
     history_start_date = start_timestamp - pd.Timedelta(days=context_length)
 
@@ -259,22 +377,67 @@ def evaluate_prediction(predictor, full_dataset):
     return forecasts, tss
 
 
-def process_predictions(forecasts, tss, quartile_books):
+def process_predictions(forecasts, tss, quartile_books, df):
+    print("\n=== Calculating Decile Groups ===")
+    total_sales = df.groupby('書名')['POS販売冊数'].sum().sort_values(ascending=False)
+    decile_groups = {}
+    n_books = len(total_sales)
+    for i, book_name in enumerate(total_sales.index):
+        decile = int(i / n_books * 10) + 1
+        if decile > 10:
+            decile = 10
+        decile_groups[book_name] = decile
+
+    total_sales_all = total_sales.sum()
+
+    for decile in range(1, 11):
+        if decile == 1:
+            folder = "top_10"
+        elif decile == 10:
+            folder = "90-100"
+        else:
+            folder = f"{(decile-1)*10}-{decile*10}"
+        os.makedirs(f'figure/predict/{folder}', exist_ok=True)
+        count = sum(1 for v in decile_groups.values() if v == decile)
+
+        decile_sales = sum(total_sales[book] for book, d in decile_groups.items() if d == decile)
+        decile_pct = (decile_sales / total_sales_all) * 100
+
+        print(f"  {folder}: {count} books, {decile_pct:.1f}% of total sales")
+
     print("\n=== Saving Predictions ===")
+    if ALL_TITLE_PREDICT:
+        print("Mode: Saving ALL book predictions")
+    else:
+        print("Mode: Saving ONLY representative book predictions (min, quartiles, max)")
+
+    saved_count = 0
     for i, forecast in enumerate(forecasts):
         book_id = forecast.item_id
         actual_data_log = tss[i]
         safe_book_id = book_id.replace("/", "_").replace("\\", "_")
-        base_save_path = f"figure/predict/forecast_{safe_book_id}.png"
-        save_forecast(
-            forecast=forecast,
-            actual_data_log=actual_data_log,
-            save_path=base_save_path,
-            title=f"{book_id}",
-            use_log_scale=USE_LOG_SCALE,
-            prediction_length=PREDICTION_LENGTH,
-            context_length=CONTEXT_LENGTH
-        )
+
+        decile = decile_groups.get(book_id, 10)
+        if decile == 1:
+            folder = "top_10"
+        elif decile == 10:
+            folder = "90-100"
+        else:
+            folder = f"{(decile-1)*10}-{decile*10}"
+
+        if ALL_TITLE_PREDICT:
+            base_save_path = f"figure/predict/{folder}/forecast_{safe_book_id}.png"
+            save_forecast(
+                forecast=forecast,
+                actual_data_log=actual_data_log,
+                save_path=base_save_path,
+                title=f"{book_id}",
+                use_log_scale=USE_LOG_SCALE,
+                prediction_length=PREDICTION_LENGTH,
+                context_length=CONTEXT_LENGTH
+            )
+            saved_count += 1
+
         if book_id in quartile_books:
             info = quartile_books[book_id]
             label = info["label"]
@@ -291,27 +454,32 @@ def process_predictions(forecasts, tss, quartile_books):
                 prediction_length=PREDICTION_LENGTH,
                 context_length=CONTEXT_LENGTH
             )
+            if not ALL_TITLE_PREDICT:
+                saved_count += 1
         if (i + 1) % 100 == 0:
             print(f"Processed {i + 1}/{len(forecasts)}")
-    print(f"All {len(forecasts)} prediction plots saved to figure/predict/")
+
+    if ALL_TITLE_PREDICT:
+        print(f"All {len(forecasts)} prediction plots saved to figure/predict/*/")
+    else:
+        print(f"{saved_count} representative prediction plots saved to figure/")
 
 
 def main():
-    os.makedirs('figure', exist_ok=True)
-    os.makedirs('figure/predict', exist_ok=True)
-    os.makedirs('figure/interpretability', exist_ok=True)
-
     print("=== Loading Data ===")
     df = pd.read_parquet('data/df_for.parquet')
+    print("Complete!")
 
+    df = add_calendar_features(df)
+    df = add_hazard_features(df, CONTEXT_LENGTH)
     quartile_books = extract_quartile_books(df)
     scaling_data(df)
     full_dataset, train_dataset, cardinality = prepare_dataset(df)
     predictor = train_model(train_dataset, cardinality)
-    process_logs('lightning_logs/tft_training', 'figure/training_history.png')
+    process_logs()
 
     forecasts, tss = evaluate_prediction(predictor, full_dataset)
-    process_predictions(forecasts, tss, quartile_books)
+    process_predictions(forecasts, tss, quartile_books, df)
 
     print("\nAll plots saved. Process Complete.")
 

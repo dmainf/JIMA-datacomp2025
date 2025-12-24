@@ -1,26 +1,14 @@
 import pandas as pd
 import numpy as np
-import sys
 import gc
-sys.path.append('../../')
-from lib.prepro import *
-
-MIN_SALES_THRESHOLD = 366
+from lib import *
 
 print("=== Loading Data ===")
-df_raw = pd.read_parquet('../../data/df.parquet')
+df_raw = pd.read_parquet('df.parquet')
 df_raw = df_raw[df_raw['POS販売冊数'] >= 0].copy()
 df_raw['日付'] = pd.to_datetime(df_raw['日付'].str[:10])
-df_raw = remove_volume(df_raw)
 cols = df_raw.select_dtypes(include=['object']).columns
 df_raw[cols] = df_raw[cols].astype('category')
-print("Complete!")
-
-print("=== Extracting Valid Books ===")
-book_sales = df_raw.groupby('書名', observed=False)['POS販売冊数'].sum().reset_index()
-book_sales.columns = ['書名', 'total_sales']
-valid_books = book_sales[book_sales['total_sales'] >= MIN_SALES_THRESHOLD]['書名'].tolist()
-print(f"Books with total sales >= {MIN_SALES_THRESHOLD}: {len(valid_books):,}")
 print("Complete!")
 
 base_cols = ['日付', '書名']
@@ -41,6 +29,8 @@ print("Complete!")
 
 print("=== Creating Full Index ===")
 date_range = pd.date_range('2024-01-01', '2024-12-31', freq='D')
+valid_books = by_book['書名'].unique()
+print(f"Number of unique books: {len(valid_books):,}")
 valid_books_df = pd.DataFrame({'書名': valid_books, 'key': 0})
 dates_df = pd.DataFrame({'日付': date_range, 'key': 0})
 df_fullindex = valid_books_df.merge(dates_df, on='key').drop('key', axis=1)
@@ -83,15 +73,7 @@ for col in categorical_cols:
         print(f"{col}: {before} -> {after}")
 print("Complete!")
 
+print_df(df_for)
+
 df_for.to_parquet('df_for.parquet', index=False)
 print("Saved DataFrame to 'df_for.parquet'")
-
-print("\n=== Data Types ===")
-print(df_for.dtypes)
-print("\n=== Data Shape ===")
-print(df_for.shape)
-
-print("\n=== POS Sales Statistics ===")
-print(f"Mean: {df_for['POS販売冊数'].mean():.4f}")
-print(f"Variance: {df_for['POS販売冊数'].var():.4f}")
-print(f"Std Dev: {df_for['POS販売冊数'].std():.4f}")
