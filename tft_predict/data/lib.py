@@ -20,9 +20,10 @@ def drop_unsure(df):
     print("Complete!")
     return df
 
-def drop_unstore(df):
+
+def drop_unstore(df, drop_stores):
     print("dropping unstore data...")
-    df = df[~df['書店コード'].isin([2, 24, 26, 27])].copy()
+    df = df[~df['書店コード'].isin(drop_stores)].copy()
     print("Complete!")
     return df
 
