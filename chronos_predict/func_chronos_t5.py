@@ -26,7 +26,7 @@ CONFIG = {
     "batch_size": 16,
     "use_log_scale": False,
     "num_samples": 20,
-    "output_dir": "../comperable/chronos_t5+FT",
+    "output_dir": "chronos_t5+FT",
     "lora_output_dir": "ch_lora_checkpoints",
     "learning_rate": 1e-4,
     "epochs": 3
@@ -260,8 +260,7 @@ def run_inference(pipeline, samples, accelerator):
 def save_results(samples, forecasts, decile_books, all_predict):
     os.makedirs(CONFIG["output_dir"], exist_ok=True)
     if all_predict:
-        os.makedirs("ch_valid/All_predict", exist_ok=True)
-        print("\n=== Saving decile_books + ALL book predictions ===")
+        os.makedirs(f"{CONFIG['output_dir']}/All_predict", exist_ok=True)
     else:
         print("\n=== Saving representative book predictions (decile_books) ===")
 
@@ -315,7 +314,7 @@ def save_results(samples, forecasts, decile_books, all_predict):
 
         if all_predict:
             filename = f"{safe_name}.png"
-            save_path = f"ch_valid/All_predict/{filename}"
+            save_path = f"{CONFIG['output_dir']}/All_predict/{filename}"
             plt.savefig(save_path)
             saved_count += 1
 
@@ -326,7 +325,7 @@ def save_results(samples, forecasts, decile_books, all_predict):
 
     print(f"Total saved: {saved_count} predictions")
 
-def evaluate_predictions(samples, forecasts, config):
+def evaluate_predictions(samples, forecasts, config, all_predict):
     print("\n=== Calculating Evaluation Metrics ===")
 
     total_metrics = {
@@ -423,6 +422,7 @@ def evaluate_predictions(samples, forecasts, config):
     print("-" * 40)
 
     eval_df = pd.DataFrame(item_results)
-    eval_csv_path = os.path.join(config["output_dir"], "evaluation_by_book.csv")
+    eval_filename = "evaluation_all.csv" if all_predict else "evaluation_decile.csv"
+    eval_csv_path = os.path.join(config["output_dir"], eval_filename)
     eval_df.to_csv(eval_csv_path, index=False)
     print(f"\nBook-level evaluation saved to: {eval_csv_path}")

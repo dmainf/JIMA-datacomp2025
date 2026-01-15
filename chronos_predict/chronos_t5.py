@@ -21,7 +21,9 @@ def main():
             adapter_path = possible_path
             print(f"Using existing adapter: {adapter_path}")
         else:
-            raise FileNotFoundError(f"Adapter not found at {possible_path}. Please set DO_TRAIN = True to train first.")
+            print(f"Adapter not found at {possible_path}. Running zero-shot inference.")
+
+    CONFIG["output_dir"] = "chronos_t5+FT" if adapter_path else "chronos_t5"
 
     print("\n=== Starting Inference ===")
     decile_books = extract_decile_books(df)
@@ -33,7 +35,7 @@ def main():
 
     forecasts = run_inference(pipeline, samples, accelerator)
     save_results(samples, forecasts, decile_books, ALL_PREDICT)
-    evaluate_predictions(samples, forecasts, CONFIG)
+    evaluate_predictions(samples, forecasts, CONFIG, ALL_PREDICT)
     print("Inference and saving complete.")
 
 if __name__ == "__main__":

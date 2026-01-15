@@ -25,7 +25,7 @@ CONFIG = {
     "context_length": 180,
     "batch_size": 16,
     "use_log_scale": False,
-    "output_dir": "../comperable/chronos_bolt+FT",
+    "output_dir": "chronos_bolt+FT",
     "lora_output_dir": "ch_bolt_lora_checkpoints",
     "learning_rate": 1e-4,
     "epochs": 3
@@ -320,7 +320,7 @@ def save_results(samples, forecasts, decile_books, all_predict):
             print(f"Saved {saved_count} predictions...")
     print(f"Total saved: {saved_count} predictions")
 
-def evaluate_predictions(samples, forecasts, config):
+def evaluate_predictions(samples, forecasts, config, all_predict):
     print("\n=== Calculating Evaluation Metrics ===")
     total_metrics = {"mae": 0.0, "mse": 0.0, "wql_10": 0.0, "wql_50": 0.0, "wql_90": 0.0, "coverage_80": 0.0, "total_sales_sum": 0.0, "count_points": 0}
     item_results = []
@@ -401,5 +401,6 @@ def evaluate_predictions(samples, forecasts, config):
     print("-" * 40)
 
     eval_df = pd.DataFrame(item_results)
-    eval_csv_path = os.path.join(config["output_dir"], "evaluation_by_book.csv")
+    eval_filename = "evaluation_all.csv" if all_predict else "evaluation_decile.csv"
+    eval_csv_path = os.path.join(config["output_dir"], eval_filename)
     eval_df.to_csv(eval_csv_path, index=False)
