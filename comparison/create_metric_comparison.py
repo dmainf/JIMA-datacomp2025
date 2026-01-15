@@ -62,11 +62,15 @@ for i, metric in enumerate(raw_metrics):
         ax.plot(xj, val, marker=marker, color=color, markersize=12,
                 markeredgecolor='black', markeredgewidth=1.5)
 
-    direction = metric_direction[metric]
-    if direction == 'lower':
-        best_idx = np.argmin(values)
+    if metric == 'Coverage_80%':
+        diffs = [abs(v - 0.8) for v in values]
+        best_idx = np.argmin(diffs)
     else:
-        best_idx = np.argmax(values)
+        direction = metric_direction[metric]
+        if direction == 'lower':
+            best_idx = np.argmin(values)
+        else:
+            best_idx = np.argmax(values)
 
     y_range = max(values) - min(values)
     for idx, (bar, value) in enumerate(zip(bars, values)):
@@ -115,16 +119,20 @@ for i, metric in enumerate(raw_metrics):
         ax.plot(xj, val, marker=marker, color=color, markersize=10,
                 markeredgecolor='black', markeredgewidth=1.5)
 
-    direction = metric_direction[metric]
-    if direction == 'lower':
-        best_idx = np.argmin(values)
+    if metric == 'Coverage_80%':
+        diffs = [abs(v - 0.8) for v in values]
+        best_idx = np.argmin(diffs)
     else:
-        best_idx = np.argmax(values)
+        direction = metric_direction[metric]
+        if direction == 'lower':
+            best_idx = np.argmin(values)
+        else:
+            best_idx = np.argmax(values)
 
     y_range = max(values) - min(values) if max(values) != min(values) else max(values)
     for idx, (bar, value) in enumerate(zip(bars, values)):
         height = bar.get_height()
-        y_offset = height + y_range * 0.05  # 棒の上から5%上に配置
+        y_offset = height + y_range * 0.05
         text_str = f'{value:.4f}' if value < 1000 else f'{value:.2e}'
         ax.text(bar.get_x() + bar.get_width()/2., y_offset,
                 text_str, ha='center', va='bottom', fontsize=8)
