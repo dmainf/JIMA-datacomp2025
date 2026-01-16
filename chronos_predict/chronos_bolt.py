@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from func_chronos_bolt import *
 
-ALL_PREDICT = False
+ALL_PREDICT = True
 DO_TRAIN = False
 
 def main():
