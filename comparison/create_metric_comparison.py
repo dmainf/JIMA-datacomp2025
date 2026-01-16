@@ -41,11 +41,34 @@ metric_direction = {
     'Coverage_80%': 'higher'
 }
 
-tft_means = [tft_df[metric].mean() for metric in raw_metrics]
-chronos_means = [chronos_df[metric].mean() for metric in raw_metrics]
-chronos_ft_means = [chronos_ft_df[metric].mean() for metric in raw_metrics]
-chronos_bolt_means = [chronos_bolt_df[metric].mean() for metric in raw_metrics]
-chronos_bolt_ft_means = [chronos_bolt_ft_df[metric].mean() for metric in raw_metrics]
+def calculate_global_metrics(df):
+    results = {}
+    total_sales = df['Total_Sales'].sum()
+
+    for metric in ['wQL_0.1', 'wQL_0.5', 'wQL_0.9', 'wQL_Mean']:
+        if metric in df.columns:
+            results[metric] = df[metric].sum() / total_sales
+
+    if 'Coverage_80%' in df.columns:
+        results['Coverage_80%'] = df['Coverage_80%'].mean()
+
+    for metric in ['MAE', 'RMSE']:
+        if metric in df.columns:
+            results[metric] = df[metric].mean()
+
+    return results
+
+tft_metrics = calculate_global_metrics(tft_df)
+chronos_metrics = calculate_global_metrics(chronos_df)
+chronos_ft_metrics = calculate_global_metrics(chronos_ft_df)
+chronos_bolt_metrics = calculate_global_metrics(chronos_bolt_df)
+chronos_bolt_ft_metrics = calculate_global_metrics(chronos_bolt_ft_df)
+
+tft_means = [tft_metrics[m] for m in raw_metrics]
+chronos_means = [chronos_metrics[m] for m in raw_metrics]
+chronos_ft_means = [chronos_ft_metrics[m] for m in raw_metrics]
+chronos_bolt_means = [chronos_bolt_metrics[m] for m in raw_metrics]
+chronos_bolt_ft_means = [chronos_bolt_ft_metrics[m] for m in raw_metrics]
 
 models = ['TFT', 'Chronos', 'Chronos+FT', 'Chronos-Bolt', 'Chronos-Bolt+FT']
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#9467bd', '#d62728']
@@ -72,11 +95,11 @@ for i, metric in enumerate(raw_metrics):
         else:
             best_idx = np.argmax(values)
 
-    y_range = max(values) - min(values)
+    y_range = max(values) - min(values) if max(values) != min(values) else max(values)
     for idx, (bar, value) in enumerate(zip(bars, values)):
         height = bar.get_height()
-        y_offset = height + y_range * 0.05  # 棒の上から5%上に配置
-        text_str = f'{value:.4f}' if value < 1000 else f'{value:.2e}'
+        y_offset = height + y_range * 0.05
+        text_str = f'{value:.4f}'
         ax.text(bar.get_x() + bar.get_width()/2., y_offset,
                 text_str, ha='center', va='bottom', fontsize=10)
 
@@ -85,7 +108,7 @@ for i, metric in enumerate(raw_metrics):
 
     ax.set_xlabel('Model', fontsize=13, fontweight='bold')
     ax.set_ylabel(label_map[metric], fontsize=13, fontweight='bold')
-    ax.set_title(f'{label_map[metric]} Comparison', fontsize=14, fontweight='bold')
+    ax.set_title(f'{label_map[metric]} Comparison', fontsize=14)
 
     ax.set_xticks(x)
     ax.set_xticklabels(models, fontsize=12)
@@ -133,7 +156,7 @@ for i, metric in enumerate(raw_metrics):
     for idx, (bar, value) in enumerate(zip(bars, values)):
         height = bar.get_height()
         y_offset = height + y_range * 0.05
-        text_str = f'{value:.4f}' if value < 1000 else f'{value:.2e}'
+        text_str = f'{value:.4f}'
         ax.text(bar.get_x() + bar.get_width()/2., y_offset,
                 text_str, ha='center', va='bottom', fontsize=8)
 
@@ -142,7 +165,7 @@ for i, metric in enumerate(raw_metrics):
 
     ax.set_xlabel('Model', fontsize=11)
     ax.set_ylabel(label_map[metric], fontsize=11)
-    ax.set_title(f'{label_map[metric]}', fontsize=12, fontweight='bold')
+    ax.set_title(f'{label_map[metric]}', fontsize=12)
 
     ax.set_xticks(x)
     ax.set_xticklabels(models, fontsize=10)

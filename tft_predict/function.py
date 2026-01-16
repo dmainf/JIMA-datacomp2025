@@ -21,14 +21,6 @@ def _get_latest_version(log_dir):
     return sorted(version_dirs, key=lambda x: int(x.split('_')[1]))[-1] if version_dirs else None
 
 
-def _get_decile_folder(decile):
-    if decile == 1:
-        return "top_10"
-    elif decile == 10:
-        return "90-100"
-    return f"{(decile-1)*10}-{decile*10}"
-
-
 def extract_decile_books(df):
     print("\n=== Identifying Representative Books (Deciles - 10% intervals) ===")
     total_sales = df.groupby('書名')['POS販売冊数'].sum().sort_values()
@@ -52,13 +44,120 @@ def extract_decile_books(df):
 
 
 @jit(nopython=True)
+def find_first_significant_peak(
+    rho: np.ndarray,
+    min_lag: int,
+    max_lag: int,
+    threshold_ratio: float = 0.75,
+    min_score: float = 0.25
+) -> Tuple[int, float]:
+    """
+    YINアルゴリズム的First Significant Peak探索（Red Noise対策付き）
+
+    1. Strict Local Peak: ρ(τ-1) < ρ(τ) > ρ(τ+1) を必須条件化
+    2. 最小スコア閾値: min_score未満の弱い相関を無視
+    3. First Peak優先: 倍音よりも基本波を優先
+    """
+    global_max = -1.0
+    for tau in range(min_lag, max_lag + 1):
+        if rho[tau] > global_max:
+            global_max = rho[tau]
+
+    if global_max < min_score:
+        return 0, 0.0
+
+    threshold = max(global_max * threshold_ratio, min_score)
+
+    for tau in range(min_lag, max_lag):
+        val = rho[tau]
+        if val >= threshold:
+            if val > rho[tau - 1] and val > rho[tau + 1]:
+                return tau, global_max
+
+    return 0, 0.0
+
+
+@jit(nopython=True)
+def compute_online_periodicity(
+    sales: np.ndarray,
+    min_lag: int = 3,
+    max_lag: int = 60,
+    alpha: float = 0.05,
+    threshold_ratio: float = 0.75,
+    min_score: float = 0.25
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    オンライン自己相関 + Red Noise対策付きピーク選択による周期性スコア計算
+
+    改良点：
+    - Strict Local Peak: AR(1)プロセスの単調減衰を除外
+    - 最小スコア閾値: 弱い相関による誤検知を防止
+    - First Significant Peak: 倍音よりも基本波を優先
+    """
+    n = len(sales)
+    scores = np.zeros(n, dtype=np.float32)
+    detected_periods = np.zeros(n, dtype=np.float32)
+
+    mu = sales[0]
+    var = 0.0
+
+    rho = np.zeros(max_lag + 2, dtype=np.float32)
+    history = np.zeros(max_lag + 1, dtype=np.float32)
+
+    for t in range(n):
+        val = sales[t]
+
+        diff = val - mu
+        mu = mu + alpha * diff
+        var = (1.0 - alpha) * var + alpha * (diff * (val - mu))
+
+        std = 1.0 if var < 1e-6 else np.sqrt(var)
+
+        z_t = (val - mu) / std
+        z_t = max(-5.0, min(5.0, z_t))
+
+        for lag in range(max_lag, 0, -1):
+            history[lag] = history[lag - 1]
+        history[0] = z_t
+
+        for lag in range(max_lag + 1):
+            rho[lag] = (1.0 - alpha) * rho[lag] + alpha * (z_t * history[lag])
+
+        if t >= min_lag:
+            best_lag, max_rho = find_first_significant_peak(
+                rho, min_lag, max_lag, threshold_ratio, min_score
+            )
+
+            scores[t] = max_rho
+            detected_periods[t] = float(best_lag)
+
+    return scores, detected_periods
+
+
+@jit(nopython=True)
 def compute_regime_features(
     sales: np.ndarray,
-    window_size: int = 5,
     hawkes_decay: float = 0.1,
     initial_adi: float = 30.0,
-    initial_cv2: float = 1.0
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    initial_cv2: float = 1.0,
+    base_alpha: float = 0.1,
+    min_period_lag: int = 3,
+    max_period_lag: int = 60,
+    period_alpha: float = 0.05,
+    period_threshold_ratio: float = 0.75,
+    period_min_score: float = 0.25
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    オンライン自己相関 + Red Noise対策による周期性検出を含む特徴量計算
+
+    Returns:
+        - feat_adi: 平均需要間隔
+        - feat_cv2: 需要間隔の変動係数の二乗
+        - feat_hawkes: Hawkes Process値
+        - feat_days_since: 前回売上からの経過日数
+        - feat_periodicity_score: 周期性スコア（オンライン自己相関ベース）
+        - feat_detected_period: 検出された周期（日数）
+    """
     n = len(sales)
 
     feat_adi = np.full(n, initial_adi, dtype=np.float32)
@@ -68,17 +167,18 @@ def compute_regime_features(
 
     current_adi = initial_adi
     current_cv2 = initial_cv2
-    last_hawkes = 0.0
-    last_event_day = -np.inf
+    current_sales_mean_interval = initial_adi
+    current_sales_var_interval = 0.0
 
-    interval_buffer = np.zeros(window_size, dtype=np.float32)
-    buffer_count = 0
-    buffer_idx = 0
+    last_hawkes = 0.0
+    last_event_day = -1.0 - initial_adi
 
     for t in range(n):
-        feat_days_since[t] = t - last_event_day if last_event_day > -np.inf else np.inf
+        days_since_sales = float(t) - last_event_day
+        feat_days_since[t] = days_since_sales
 
-        feat_adi[t] = current_adi
+        effective_adi = max(current_adi, days_since_sales)
+        feat_adi[t] = effective_adi
         feat_cv2[t] = current_cv2
 
         dt = 1.0
@@ -87,110 +187,112 @@ def compute_regime_features(
 
         if sales[t] > 0:
             last_hawkes = current_hawkes_val + sales[t]
-
-            if last_event_day > -np.inf:
+            if last_event_day >= 0:
                 new_interval = t - last_event_day
+                delta = new_interval - current_sales_mean_interval
+                current_sales_mean_interval += base_alpha * delta
+                current_sales_var_interval = (1.0 - base_alpha) * (current_sales_var_interval + base_alpha * delta**2)
 
-                interval_buffer[buffer_idx] = new_interval
-                buffer_idx = (buffer_idx + 1) % window_size
-                buffer_count = min(buffer_count + 1, window_size)
-
-                if buffer_count > 0:
-                    valid_intervals = interval_buffer[:buffer_count] if buffer_count < window_size else interval_buffer
-                    mean_interval = np.mean(valid_intervals)
-                    std_interval = np.std(valid_intervals)
-
-                    current_adi = mean_interval
-                    if mean_interval > 0:
-                        current_cv2 = (std_interval / mean_interval) ** 2
-                    else:
-                        current_cv2 = 1.0
-
+                current_adi = current_sales_mean_interval
+                if current_sales_mean_interval > 1e-6:
+                    current_cv2 = (np.sqrt(current_sales_var_interval) / current_sales_mean_interval) ** 2
+                else:
+                    current_cv2 = 1.0
             last_event_day = float(t)
         else:
             last_hawkes = current_hawkes_val
 
-    return feat_adi, feat_cv2, feat_hawkes, feat_days_since
+    feat_periodicity_score, feat_detected_period = compute_online_periodicity(
+        sales,
+        min_lag=min_period_lag,
+        max_lag=max_period_lag,
+        alpha=period_alpha,
+        threshold_ratio=period_threshold_ratio,
+        min_score=period_min_score
+    )
+
+    return feat_adi, feat_cv2, feat_hawkes, feat_days_since, feat_periodicity_score, feat_detected_period
 
 
 def calculate_hazard_features(
     df,
-    context_length=180,
-    recent_period=14,
-    spike_thresholds=[2.0, 2.5, 3.0],
-    window_size=5,
-    hawkes_decay=0.1,
-    initial_adi=30.0,
-    initial_cv2=1.0,
-    lambda_adi=30.0,
-    scale_hawkes=10.0
+    context_length,
+    recent_period,
+    spike_thresholds=[1.5, 2.0, 2.5, 3.0]
 ):
-    print("\n=== Calculating Hazard Features & Regime Classification ===")
+    print("\n=== Calculating Hazard Features ===")
     print(f"Context length: {context_length} days")
     print(f"Recent period (momentum): {recent_period} days")
     print(f"Spike thresholds: {spike_thresholds}")
-    print(f"Regime parameters: window_size={window_size}, hawkes_decay={hawkes_decay}")
-    print("Using vectorized operations for better performance")
 
     df = df.sort_values(['書名', '日付']).reset_index(drop=True)
+    n = len(df)
 
-    rolling_mean_context = df.groupby('書名')['POS販売冊数'].transform(
-        lambda x: x.shift(1).rolling(window=context_length, min_periods=1).mean()
-    )
-    rolling_mean_recent = df.groupby('書名')['POS販売冊数'].transform(
-        lambda x: x.shift(1).rolling(window=recent_period, min_periods=1).mean()
-    )
-    rolling_std = df.groupby('書名')['POS販売冊数'].transform(
-        lambda x: x.shift(1).rolling(window=context_length, min_periods=1).std()
-    )
+    momentum_arr = np.ones(n, dtype=np.float32)
+    volatility_arr = np.zeros(n, dtype=np.float32)
+    z_score_arr = np.zeros(n, dtype=np.float32)
+    days_since_spike_dict = {threshold: np.zeros(n, dtype=np.int32) for threshold in spike_thresholds}
 
-    df['momentum'] = (rolling_mean_recent / np.maximum(rolling_mean_context, 1e-8)).fillna(1.0).astype(np.float32)
-    df['volatility'] = rolling_std.fillna(0.0).astype(np.float32)
-    df['z_score'] = (
-        (df['POS販売冊数'] - rolling_mean_context) / np.maximum(rolling_std, 1e-8)
-    ).fillna(0.0).replace([np.inf, -np.inf], 0.0).clip(-10, 10).astype(np.float32)
+    for book_name, group in df.groupby('書名', observed=False):
+        indices = group.index.values
+        sales = group['POS販売冊数'].values
 
-    def calculate_days_since_spike(group, threshold):
-        is_spike = group['z_score'] >= threshold
-        indices = pd.Series(np.arange(len(group)), index=group.index)
-        spike_indices = indices.where(is_spike)
-        last_spike_idx = spike_indices.ffill()
-        days_since = indices - last_spike_idx
-        return days_since.fillna(0).astype(np.int32)
+        last_spike_idx_dict = {threshold: -1 for threshold in spike_thresholds}
+
+        for i in range(len(sales)):
+            current_idx = indices[i]
+            start_local = max(0, i - context_length + 1)
+
+            current_z_score = 0.0
+            if i > 0:
+                hist_sales_excl_today = sales[start_local : i]
+
+                if len(hist_sales_excl_today) >= recent_period:
+                    rec_mean = np.mean(hist_sales_excl_today[-recent_period:])
+                    hist_mean = np.mean(hist_sales_excl_today)
+                    momentum = rec_mean / hist_mean if hist_mean > 0 else 1.0
+                else:
+                    momentum = 1.0
+
+                volatility = np.std(hist_sales_excl_today) if len(hist_sales_excl_today) > 1 else 0.0
+
+                if len(hist_sales_excl_today) > 0:
+                    hist_mean = np.mean(hist_sales_excl_today)
+                    hist_std = np.std(hist_sales_excl_today)
+                    if hist_std > 0:
+                        current_z_score = (sales[i] - hist_mean) / hist_std
+            else:
+                momentum = 1.0
+                volatility = 0.0
+
+            momentum_arr[current_idx] = momentum
+            volatility_arr[current_idx] = volatility
+            z_score_arr[current_idx] = current_z_score
+
+            for threshold in spike_thresholds:
+                last_spike_idx = last_spike_idx_dict[threshold]
+
+                if last_spike_idx == -1:
+                    days_since = context_length
+                else:
+                    days_since = i - last_spike_idx
+
+                if current_z_score >= threshold:
+                    last_spike_idx_dict[threshold] = i
+
+                days_since_spike_dict[threshold][current_idx] = days_since
+
+    df['momentum'] = momentum_arr
+    df['volatility'] = volatility_arr
+    df['z_score'] = z_score_arr
 
     for threshold in spike_thresholds:
         col_name = f'days_since_spike_{threshold}'
-        df[col_name] = df.groupby('書名', group_keys=False).apply(
-            lambda g: calculate_days_since_spike(g, threshold)
-        ).astype(np.int32)
+        df[col_name] = days_since_spike_dict[threshold]
 
-    print("\n=== Calculating Regime Features ===")
-    regime_results = []
-    for item_name, group in df.groupby('書名', observed=True):
-        sales_array = group['POS販売冊数'].values.astype(np.float32)
-
-        feat_adi, feat_cv2, feat_hawkes, feat_days_since = compute_regime_features(
-            sales_array,
-            window_size=window_size,
-            hawkes_decay=hawkes_decay,
-            initial_adi=initial_adi,
-            initial_cv2=initial_cv2
-        )
-
-        regime_results.append(pd.DataFrame({
-            'feat_adi': feat_adi,
-            'feat_cv2': feat_cv2,
-            'feat_hawkes': feat_hawkes,
-            'feat_days_since': feat_days_since
-        }, index=group.index))
-
-    regime_features_df = pd.concat(regime_results, axis=0).sort_index()
-    df = pd.concat([df, regime_features_df], axis=1)
-
-    print("\n=== Calculating Regime Scores ===")
-    df['score_sparse'] = (1.0 - np.exp(-df['feat_adi'] / lambda_adi)).astype(np.float32)
-    df['score_periodic'] = np.clip(1.0 - np.sqrt(df['feat_cv2']), 0.0, 1.0).astype(np.float32)
-    df['score_burst'] = np.tanh(df['feat_hawkes'] / scale_hawkes).astype(np.float32)
+    for threshold in spike_thresholds:
+        col_name = f'is_spike_{threshold}'
+        df[col_name] = (df['z_score'] >= threshold).astype(np.int8)
 
     print("\n=== Hazard Features Statistics ===")
     print(f"Momentum - Mean: {df['momentum'].mean():.4f}, Std: {df['momentum'].std():.4f}")
@@ -199,16 +301,108 @@ def calculate_hazard_features(
     for threshold in spike_thresholds:
         col_name = f'days_since_spike_{threshold}'
         print(f"Days since spike ({threshold}) - Mean: {df[col_name].mean():.1f}, Median: {df[col_name].median():.1f}")
+    for threshold in spike_thresholds:
+        col_name = f'is_spike_{threshold}'
+        spike_rate = df[col_name].mean() * 100
+        print(f"Is spike ({threshold}) - Spike rate: {spike_rate:.2f}%")
+
+    return df
+
+
+def calculate_regime_features(
+    df,
+    hawkes_decay=0.1,
+    initial_adi=30.0,
+    initial_cv2=1.0,
+    base_alpha=0.1,
+    min_period_lag=3,
+    max_period_lag=60,
+    period_alpha=0.05,
+    period_threshold_ratio=0.75,
+    period_min_score=0.25,
+    lambda_adi=30.0
+):
+    """
+    Red Noise対策付きオンライン自己相関による周期性検出を含む特徴量計算
+
+    改良点：
+    - スパイク依存を完全排除（is_spike不要）
+    - オンライン自己相関による周期性検出
+    - YIN的倍音抑制（7日vs14日で基本波を優先）
+    - AR(1)プロセス（Red Noise）対策
+    """
+    print("\n=== Calculating Regime Features (Red Noise Resistant) ===")
+    print(f"Hawkes decay: {hawkes_decay}")
+    print(f"ADI parameters: initial={initial_adi}, base_alpha={base_alpha}")
+    print(f"Periodicity detection:")
+    print(f"  - min_period_lag={min_period_lag} (AR(1)ノイズ除外)")
+    print(f"  - max_period_lag={max_period_lag}")
+    print(f"  - period_alpha={period_alpha} (学習率)")
+    print(f"  - period_threshold_ratio={period_threshold_ratio} (倍音抑制)")
+    print(f"  - period_min_score={period_min_score} (弱い相関除外)")
+
+    df = df.sort_values(['書名', '日付']).reset_index(drop=True)
+
+    regime_results = []
+    for item_name, group in df.groupby('書名', observed=True):
+        sales_array = group['POS販売冊数'].values.astype(np.float32)
+
+        feat_adi, feat_cv2, feat_hawkes, feat_days_since, feat_periodicity_score, feat_detected_period = compute_regime_features(
+            sales_array,
+            hawkes_decay=hawkes_decay,
+            initial_adi=initial_adi,
+            initial_cv2=initial_cv2,
+            base_alpha=base_alpha,
+            min_period_lag=min_period_lag,
+            max_period_lag=max_period_lag,
+            period_alpha=period_alpha,
+            period_threshold_ratio=period_threshold_ratio,
+            period_min_score=period_min_score
+        )
+
+        regime_results.append(pd.DataFrame({
+            'feat_adi': feat_adi,
+            'feat_cv2': feat_cv2,
+            'feat_hawkes': feat_hawkes,
+            'feat_days_since': feat_days_since,
+            'feat_periodicity_score': feat_periodicity_score,
+            'feat_detected_period': feat_detected_period
+        }, index=group.index))
+
+    regime_features_df = pd.concat(regime_results, axis=0).sort_index()
+    df = pd.concat([df, regime_features_df], axis=1)
+
+    print("\n=== Calculating Regime Scores ===")
+    df['score_sparse'] = (1.0 - np.exp(-df['feat_adi'] / lambda_adi)).astype(np.float32)
+
+    rolling_max_hawkes = df.groupby('書名', observed=False)['feat_hawkes'].transform(
+        lambda x: x.expanding(min_periods=1).max()
+    )
+    scale_hawkes = rolling_max_hawkes.replace(0, 1.0) * 0.5
+    df['score_burst'] = np.tanh(df['feat_hawkes'] / scale_hawkes).astype(np.float32)
+
+    df['score_periodic'] = df['feat_periodicity_score'].clip(0.0, 1.0).astype(np.float32)
 
     print("\n=== Regime Features Statistics ===")
     print(f"ADI - Mean: {df['feat_adi'].mean():.4f}, Std: {df['feat_adi'].std():.4f}")
-    print(f"CV2 - Mean: {df['feat_cv2'].mean():.4f}, Std: {df['feat_cv2'].std():.4f}")
+    print(f"CV2 (Sales) - Mean: {df['feat_cv2'].mean():.4f}, Std: {df['feat_cv2'].std():.4f}")
     print(f"Hawkes - Mean: {df['feat_hawkes'].mean():.4f}, Std: {df['feat_hawkes'].std():.4f}")
     print(f"Days Since Event - Mean: {df['feat_days_since'].mean():.4f}, Median: {df['feat_days_since'].median():.4f}")
+    print(f"Periodicity Score - Mean: {df['feat_periodicity_score'].mean():.4f}, Std: {df['feat_periodicity_score'].std():.4f}")
+    print(f"Detected Period - Mean: {df['feat_detected_period'].mean():.1f} days, Median: {df['feat_detected_period'].median():.1f} days")
+
+    detected_periods = df[df['feat_detected_period'] > 0]['feat_detected_period']
+    if len(detected_periods) > 0:
+        print(f"  Detection rate: {len(detected_periods) / len(df) * 100:.1f}%")
+        period_counts = detected_periods.value_counts().head(5)
+        print(f"  Top 5 detected periods:")
+        for period, count in period_counts.items():
+            print(f"    {period:.0f}日: {count}回 ({count/len(detected_periods)*100:.1f}%)")
 
     print("\n=== Regime Scores Statistics ===")
     print(f"Sparse Score - Mean: {df['score_sparse'].mean():.4f}, Std: {df['score_sparse'].std():.4f}")
     print(f"Periodic Score - Mean: {df['score_periodic'].mean():.4f}, Std: {df['score_periodic'].std():.4f}")
+    print(f"  High periodicity (≥0.5): {(df['score_periodic'] >= 0.5).sum() / len(df) * 100:.1f}%")
     print(f"Burst Score - Mean: {df['score_burst'].mean():.4f}, Std: {df['score_burst'].std():.4f}")
 
     return df
@@ -410,17 +604,18 @@ def prepare_dataset(df, static_cols, time_feature_cols, past_dynamic_cols, predi
         train_entry = entry.copy()
         train_entry["target"] = entry["target"][:-prediction_length]
         if "feat_dynamic_real" in entry:
-            train_entry["feat_dynamic_real"] = entry["feat_dynamic_real"][:, :-prediction_length]
+            train_entry["feat_dynamic_real"] = entry["feat_dynamic_real"]
         if "past_feat_dynamic_real" in entry:
             train_entry["past_feat_dynamic_real"] = entry["past_feat_dynamic_real"][:, :-prediction_length]
         train_dataset.append(train_entry)
-    print("Training dataset created by removing prediction length from the end of each series.")
+    print("Training dataset created by removing prediction length from target and past features.")
+    print("Note: feat_dynamic_real (known future covariates) is NOT truncated to preserve calendar/price information.")
     return full_dataset, train_dataset, cardinality
 
 
 def plot_training_history():
     log_dir = 'lightning_logs/tft_training'
-    save_path = 'valid/training_history.png'
+    save_path = 'tft/training_history.png'
     os.makedirs(os.path.dirname(save_path) or '.', exist_ok=True)
     if not os.path.exists(log_dir):
         print(f"Log directory not found: {log_dir}")
@@ -518,17 +713,20 @@ def save_forecast(forecast, actual_data_log, save_path, title, use_log_scale, pr
     future_end_date = start_timestamp + pd.Timedelta(days=prediction_length - 1)
     target_series = actual_data_log[start_timestamp:future_end_date]
     history_dates = past_series.index if not past_series.empty else []
-    history_values = past_series.values if not past_series.empty else []
+    history_values = past_series.values.flatten() if not past_series.empty else []
     target_dates = target_series.index if not target_series.empty else []
-    target_values = target_series.values if not target_series.empty else []
+    target_values = target_series.values.flatten() if not target_series.empty else []
     forecast_dates = [start_timestamp + pd.Timedelta(days=i) for i in range(prediction_length)]
+    q_vals = {q: forecast.quantile(q) for q in quantiles}
+    if use_log_scale:
+        history_values = np.expm1(history_values) if len(history_values) > 0 else history_values
+        target_values = np.expm1(target_values) if len(target_values) > 0 else target_values
+        q_vals = {q: np.expm1(v) for q, v in q_vals.items()}
     plt.figure(figsize=(12, 6))
     if len(history_dates) > 0:
         plt.plot(history_dates, history_values, label="Actual History", color='black', linestyle='--')
     if len(target_dates) > 0:
         plt.plot(target_dates, target_values, label="Actual Target", color='black', marker='o', markersize=3)
-    q_vals = {q: forecast.quantile(q) for q in quantiles}
-
     quantile_set = set(quantiles)
     pairs = []
     for q in sorted(quantiles):
@@ -536,7 +734,6 @@ def save_forecast(forecast, actual_data_log, save_path, title, use_log_scale, pr
             complement = round(1 - q, 2)
             if complement in quantile_set:
                 pairs.append((q, complement))
-
     colors = ['blue', 'cyan', 'lightgreen', 'yellow']
     alphas = [0.15, 0.3, 0.45, 0.6]
     for idx, (lower, upper) in enumerate(pairs):
@@ -546,12 +743,11 @@ def save_forecast(forecast, actual_data_log, save_path, title, use_log_scale, pr
         plt.fill_between(forecast_dates, q_vals[lower], q_vals[upper],
                         color=color, alpha=alpha,
                         label=f"{coverage}% Interval ({int(lower*100)}-{int(upper*100)}%)")
-
     if 0.5 in q_vals:
         plt.plot(forecast_dates, q_vals[0.5], label="Median (50%)", color='blue', linewidth=2)
     plt.title(title, fontsize=14)
     plt.xlabel("日付")
-    plt.ylabel("POS販売冊数 (log1p)" if use_log_scale else "POS販売冊数")
+    plt.ylabel("POS販売冊数")
     plt.legend(loc='upper left')
     plt.grid(True, alpha=0.5)
     plt.xticks(rotation=45)
@@ -560,7 +756,7 @@ def save_forecast(forecast, actual_data_log, save_path, title, use_log_scale, pr
     plt.close()
 
 
-def evaluate_prediction(predictor, full_dataset):
+def evaluate_prediction(predictor, full_dataset, use_log_scale=False):
     print("\n=== Evaluating ===")
     forecast_it, ts_it = make_evaluation_predictions(
         dataset=full_dataset,
@@ -569,41 +765,30 @@ def evaluate_prediction(predictor, full_dataset):
     )
     forecasts = list(forecast_it)
     tss = list(ts_it)
-    evaluator = Evaluator()
-    agg_metrics, item_metrics = evaluator(tss, forecasts)
-    print("\n=== Metrics ===")
-    for key, value in agg_metrics.items():
-        print(f"{key}: {value:.4f}")
+    if use_log_scale:
+        print("Log scale mode: Skipping GluonTS Evaluator (metrics would be on log-transformed data)")
+        print("Accurate metrics will be calculated by evaluate_predictions() with inverse transformation")
+    else:
+        evaluator = Evaluator()
+        agg_metrics, item_metrics = evaluator(tss, forecasts)
+        print("\n=== Metrics ===")
+        for key, value in agg_metrics.items():
+            print(f"{key}: {value:.4f}")
     return forecasts, tss
 
 
 def process_predictions(forecasts, tss, decile_books, df, all_title_predict, use_log_scale, prediction_length, context_length, quantiles):
-    print("\n=== Calculating Decile Groups ===")
-    total_sales = df.groupby('書名')['POS販売冊数'].sum().sort_values(ascending=False)
-    n_books = len(total_sales)
-    decile_groups = {book_name: min(int(i / n_books * 10) + 1, 10)
-                     for i, book_name in enumerate(total_sales.index)}
-    total_sales_all = total_sales.sum()
-    decile_sales_dict = {d: sum(total_sales[book] for book, dd in decile_groups.items() if dd == d)
-                         for d in range(1, 11)}
-    for decile in range(1, 11):
-        folder = _get_decile_folder(decile)
-        os.makedirs(f'valid/All_predict/{folder}', exist_ok=True)
-        count = sum(1 for v in decile_groups.values() if v == decile)
-        decile_pct = (decile_sales_dict[decile] / total_sales_all) * 100
-        print(f"  {folder}: {count} books, {decile_pct:.1f}% of total sales")
     print("\n=== Saving Predictions ===")
     print("Mode: Saving ALL book predictions" if all_title_predict else "Mode: Saving ONLY representative book predictions (min, deciles, max)")
+    os.makedirs('tft/All_predict', exist_ok=True)
 
     saved_count = 0
     for i, forecast in enumerate(forecasts):
         book_id = forecast.item_id
         actual_data_log = tss[i]
         safe_book_id = book_id.replace("/", "_").replace("\\", "_")
-        decile = decile_groups.get(book_id, 10)
-        folder = _get_decile_folder(decile)
         if all_title_predict:
-            base_save_path = f"valid/All_predict/{folder}/forecast_{safe_book_id}.png"
+            base_save_path = f"tft/All_predict/forecast_{safe_book_id}.png"
             save_forecast(
                 forecast=forecast,
                 actual_data_log=actual_data_log,
@@ -621,7 +806,7 @@ def process_predictions(forecasts, tss, decile_books, df, all_title_predict, use
             total_sales = info["total_sales"]
             print(f"Plotting Representative: {label} - {book_id}")
             safe_label = label.replace(" ", "").replace("(", "").replace(")", "").replace("%", "")
-            rep_save_path = f"valid/forecast_{safe_label}_{book_id}.png"
+            rep_save_path = f"tft/forecast_{safe_label}_{book_id}.png"
             save_forecast(
                 forecast=forecast,
                 actual_data_log=actual_data_log,
@@ -636,5 +821,245 @@ def process_predictions(forecasts, tss, decile_books, df, all_title_predict, use
                 saved_count += 1
         if (i + 1) % 100 == 0:
             print(f"Processed {i + 1}/{len(forecasts)}")
-    print(f"All {len(forecasts)} prediction plots saved to valid/All_predict/*/" if all_title_predict
-          else f"{saved_count} representative prediction plots saved to valid/")
+    print(f"All {len(forecasts)} prediction plots saved to tft/All_predict/" if all_title_predict
+          else f"{saved_count} representative prediction plots saved to tft/")
+
+
+def calculate_all_features(
+    df,
+    use_log_scale,
+    use_hazard_features,
+    use_sales_relative_features,
+    use_price_relative_features,
+    context_length,
+    recent_period=14
+):
+    print("\n=== Feature Calculation ===")
+    print(f"Log Scale: {'ENABLED' if use_log_scale else 'DISABLED'}")
+    print(f"Hazard Features: {'ENABLED' if use_hazard_features else 'DISABLED'}")
+    print(f"Sales Relative Features: {'ENABLED' if use_sales_relative_features else 'DISABLED'}")
+    print(f"Price Relative Features: {'ENABLED' if use_price_relative_features else 'DISABLED'}")
+
+    df = scaling_data(df, use_log_scale)
+
+    if use_hazard_features:
+        df = calculate_hazard_features(df, context_length=context_length, recent_period=recent_period)
+        df = calculate_regime_features(df)
+
+    if use_sales_relative_features:
+        df = calculate_temporal_relative_features(
+            df,
+            target_col='POS販売冊数',
+            category_cols=['大分類', '中分類', '小分類'],
+            context_length=context_length
+        )
+
+    if use_price_relative_features:
+        df = calculate_static_relative_features(
+            df,
+            target_col='log_本体価格',
+            category_cols=['大分類', '中分類', '小分類']
+        )
+
+    return df
+
+
+def apply_leakage_shift(df, use_sales_relative_features, use_hazard_features):
+    print("\n=== Applying Lag-1 Shift to Prevent Data Leakage ===")
+    print("Shifting features that use current timestep's sales to next timestep")
+    print("This ensures: Row t = Target(t) + Features(t-1)")
+    print("\nNote: feat_hawkes, feat_adi, feat_cv2, feat_days_since, score_sparse, score_burst")
+    print("are NOT shifted because they are calculated from past events only (no current sales leakage)")
+
+    leakage_cols = []
+
+    if use_sales_relative_features:
+        leakage_cols.extend([
+            '大分類_POS販売冊数_relative',
+            '大分類_POS販売冊数_z_score',
+            '中分類_POS販売冊数_relative',
+            '中分類_POS販売冊数_z_score',
+            '小分類_POS販売冊数_relative',
+            '小分類_POS販売冊数_z_score',
+        ])
+
+    if use_hazard_features:
+        leakage_cols.extend([
+            'z_score',
+            'is_spike_1.5',
+            'is_spike_2.0',
+            'is_spike_2.5',
+            'is_spike_3.0',
+            'days_since_spike_1.5',
+            'days_since_spike_2.0',
+            'days_since_spike_2.5',
+            'days_since_spike_3.0',
+            'feat_periodicity_score',
+            'feat_detected_period',
+            'score_periodic'
+        ])
+
+    df = df.sort_values(['書名', '日付']).reset_index(drop=True)
+
+    for col in leakage_cols:
+        if col in df.columns:
+            df[col] = df.groupby('書名', observed=False)[col].shift(1).fillna(0).astype(np.float32)
+            print(f"  ✓ Shifted: {col}")
+        else:
+            print(f"  ✗ Not found: {col}")
+
+    print(f"Total shifted features: {len([c for c in leakage_cols if c in df.columns])}")
+    print("First row of each book now has lagged features = 0 (no history)")
+
+    return df
+
+
+def build_feature_lists(
+    use_calendar_features,
+    use_sales_relative_features,
+    use_price_relative_features,
+    use_hazard_features,
+    calendar_feature_cols,
+    sales_relative_cols,
+    price_relative_cols,
+    hazard_feature_cols
+):
+    print("\n=== Building Feature Lists ===")
+
+    time_feature_cols = []
+    if use_calendar_features:
+        time_feature_cols.extend(calendar_feature_cols)
+        print(f"Added calendar features: {len(calendar_feature_cols)} features")
+    if use_price_relative_features:
+        time_feature_cols.extend(price_relative_cols)
+        print(f"Added price relative features: {len(price_relative_cols)} features")
+
+    past_dynamic_cols = []
+    if use_sales_relative_features:
+        past_dynamic_cols.extend(sales_relative_cols)
+        print(f"Added sales relative features: {len(sales_relative_cols)} features")
+    if use_hazard_features:
+        past_dynamic_cols.extend(hazard_feature_cols)
+        print(f"Added hazard features: {len(hazard_feature_cols)} features")
+
+    print(f"\nTotal time features (known covariates): {len(time_feature_cols)}")
+    print(f"Total past dynamic features (observed covariates): {len(past_dynamic_cols)}")
+
+    return time_feature_cols, past_dynamic_cols
+
+
+def evaluate_predictions(forecasts, tss, use_log_scale, prediction_length):
+    print("\n=== Calculating Evaluation Metrics ===")
+
+    total_metrics = {
+        "mae": 0.0,
+        "mse": 0.0,
+        "wql_10": 0.0,
+        "wql_50": 0.0,
+        "wql_90": 0.0,
+        "coverage_80": 0.0,
+        "total_sales_sum": 0.0,
+        "count_points": 0
+    }
+
+    item_results = []
+
+    for i, (forecast, ts) in enumerate(zip(forecasts, tss)):
+        book_name = forecast.item_id
+
+        start_timestamp = forecast.start_date.to_timestamp() if hasattr(forecast.start_date, 'to_timestamp') else pd.Timestamp(forecast.start_date)
+        future_end_date = start_timestamp + pd.Timedelta(days=prediction_length - 1)
+
+        if hasattr(ts.index, 'to_timestamp'):
+            ts_indexed = ts.copy()
+            ts_indexed.index = ts.index.to_timestamp()
+        else:
+            ts_indexed = ts
+
+        target_series = ts_indexed[start_timestamp:future_end_date]
+        target = target_series.values.flatten()
+
+        if len(target) != prediction_length:
+            print(f"Warning: {book_name} has {len(target)} points instead of {prediction_length}, skipping")
+            continue
+
+        q10 = forecast.quantile(0.1)
+        q50 = forecast.quantile(0.5)
+        q90 = forecast.quantile(0.9)
+
+        if use_log_scale:
+            target = np.expm1(target)
+            q10 = np.expm1(q10)
+            q50 = np.expm1(q50)
+            q90 = np.expm1(q90)
+
+        ae = np.abs(target - q50)
+
+        se = (target - q50) ** 2
+
+        def pinball_loss(y_true, y_pred, quantile):
+            diff = y_true - y_pred
+            return np.maximum(quantile * diff, (quantile - 1) * diff)
+
+        loss_10 = pinball_loss(target, q10, 0.1)
+        loss_50 = pinball_loss(target, q50, 0.5)
+        loss_90 = pinball_loss(target, q90, 0.9)
+
+        in_interval = ((target >= q10) & (target <= q90)).astype(float)
+
+        pred_len = len(target)
+        item_sales_sum = np.sum(np.abs(target))
+
+        total_metrics["mae"] += np.sum(ae)
+        total_metrics["mse"] += np.sum(se)
+        total_metrics["wql_10"] += np.sum(loss_10)
+        total_metrics["wql_50"] += np.sum(loss_50)
+        total_metrics["wql_90"] += np.sum(loss_90)
+        total_metrics["coverage_80"] += np.sum(in_interval)
+        total_metrics["total_sales_sum"] += item_sales_sum
+        total_metrics["count_points"] += pred_len
+
+        item_mae = np.mean(ae)
+        item_rmse = np.sqrt(np.mean(se))
+        item_wql_10 = 2 * np.sum(loss_10)
+        item_wql_50 = 2 * np.sum(loss_50)
+        item_wql_90 = 2 * np.sum(loss_90)
+        item_wql_mean = (item_wql_10 + item_wql_50 + item_wql_90) / 3
+        item_coverage = np.mean(in_interval)
+
+        item_results.append({
+            "book_name": book_name,
+            "MAE": item_mae,
+            "RMSE": item_rmse,
+            "wQL_0.1": item_wql_10,
+            "wQL_0.5": item_wql_50,
+            "wQL_0.9": item_wql_90,
+            "wQL_Mean": item_wql_mean,
+            "Coverage_80%": item_coverage,
+            "Total_Sales": np.sum(target)
+        })
+
+    final_metrics = {}
+
+    final_metrics["MAE"] = total_metrics["mae"] / total_metrics["count_points"]
+    final_metrics["RMSE"] = np.sqrt(total_metrics["mse"] / total_metrics["count_points"])
+
+    denom = total_metrics["total_sales_sum"] + 1e-9
+    final_metrics["wQL_0.1"] = 2 * total_metrics["wql_10"] / denom
+    final_metrics["wQL_0.5"] = 2 * total_metrics["wql_50"] / denom
+    final_metrics["wQL_0.9"] = 2 * total_metrics["wql_90"] / denom
+    final_metrics["wQL_Mean"] = (final_metrics["wQL_0.1"] + final_metrics["wQL_0.5"] + final_metrics["wQL_0.9"]) / 3
+
+    final_metrics["Coverage_80%"] = total_metrics["coverage_80"] / total_metrics["count_points"]
+
+    print("-" * 40)
+    print(f"{'Metric':<20} | {'Value'}")
+    print("-" * 40)
+    for k, v in final_metrics.items():
+        print(f"{k:<20} | {v:.4f}")
+    print("-" * 40)
+
+    eval_df = pd.DataFrame(item_results)
+    eval_csv_path = os.path.join("tft", "evaluation_all.csv")
+    eval_df.to_csv(eval_csv_path, index=False)
+    print(f"\nBook-level evaluation saved to: {eval_csv_path}")
