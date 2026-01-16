@@ -20,7 +20,7 @@ plt.rcParams['font.family'] = ['Hiragino Sans', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 
 CONFIG = {
-    "model_name": "amazon/chronos-bolt-small",
+    "model_name": "amazon/chronos-bolt-base",
     "prediction_length": 64,
     "context_length": 180,
     "batch_size": 16,
