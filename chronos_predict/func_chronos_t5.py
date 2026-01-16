@@ -383,9 +383,9 @@ def evaluate_predictions(samples, forecasts, config, all_predict):
 
         item_mae = np.mean(ae)
         item_rmse = np.sqrt(np.mean(se))
-        item_wql_10 = 2 * np.sum(loss_10) / (item_sales_sum + 1e-9)
-        item_wql_50 = 2 * np.sum(loss_50) / (item_sales_sum + 1e-9)
-        item_wql_90 = 2 * np.sum(loss_90) / (item_sales_sum + 1e-9)
+        item_wql_10 = 2 * np.sum(loss_10)
+        item_wql_50 = 2 * np.sum(loss_50)
+        item_wql_90 = 2 * np.sum(loss_90)
         item_wql_mean = (item_wql_10 + item_wql_50 + item_wql_90) / 3
         item_coverage = np.mean(in_interval)
 
@@ -406,10 +406,9 @@ def evaluate_predictions(samples, forecasts, config, all_predict):
     final_metrics["MAE"] = total_metrics["mae"] / total_metrics["count_points"]
     final_metrics["RMSE"] = np.sqrt(total_metrics["mse"] / total_metrics["count_points"])
 
-    denom = total_metrics["total_sales_sum"] + 1e-9
-    final_metrics["wQL_0.1"] = 2 * total_metrics["wql_10"] / denom
-    final_metrics["wQL_0.5"] = 2 * total_metrics["wql_50"] / denom
-    final_metrics["wQL_0.9"] = 2 * total_metrics["wql_90"] / denom
+    final_metrics["wQL_0.1"] = 2 * total_metrics["wql_10"] / total_metrics["total_sales_sum"]
+    final_metrics["wQL_0.5"] = 2 * total_metrics["wql_50"] / total_metrics["total_sales_sum"]
+    final_metrics["wQL_0.9"] = 2 * total_metrics["wql_90"] / total_metrics["total_sales_sum"]
     final_metrics["wQL_Mean"] = (final_metrics["wQL_0.1"] + final_metrics["wQL_0.5"] + final_metrics["wQL_0.9"]) / 3
 
     final_metrics["Coverage_80%"] = total_metrics["coverage_80"] / total_metrics["count_points"]
