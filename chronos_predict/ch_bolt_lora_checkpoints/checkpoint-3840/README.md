@@ -1,8 +1,8 @@
 ---
-base_model: amazon/chronos-bolt-small
+base_model: amazon/chronos-bolt-base
 library_name: peft
 tags:
-- base_model:adapter:amazon/chronos-bolt-small
+- base_model:adapter:amazon/chronos-bolt-base
 - lora
 - transformers
 ---

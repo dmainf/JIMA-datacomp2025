@@ -23,7 +23,7 @@ def main():
         else:
             print(f"Adapter not found at {possible_path}. Running zero-shot inference.")
 
-    CONFIG["output_dir"] = "chronos_t5+FT" if adapter_path else "chronos_t5"
+    CONFIG["output_dir"] = "chronos_t5+FT" if adapter_path else "chronos_t5(zero-shot)"
 
     print("\n=== Starting Inference ===")
     decile_books = extract_decile_books(df)
