@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import os
+import glob
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
@@ -10,11 +11,22 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['font.size'] = 11
 
 base_path = '.'
-tft_df = pd.read_csv(f'{base_path}/tft/evaluation_all.csv')
-chronos_df = pd.read_csv(f'{base_path}/chronos_t5/evaluation_all.csv')
-chronos_ft_df = pd.read_csv(f'{base_path}/chronos_t5+FT/evaluation_all.csv')
-chronos_bolt_df = pd.read_csv(f'{base_path}/chronos_bolt/evaluation_all.csv')
-chronos_bolt_ft_df = pd.read_csv(f'{base_path}/chronos_bolt+FT/evaluation_all.csv')
+
+color_pool = ['#9467bd', '#ff9896', '#e377c2', '#17becf', '#2ca02c', '#d62728', '#ff7f0e', '#1f77b4']
+marker_pool = ['p', 'D', 'o', 's', '^', 'v', 'X', 'P']
+
+csv_files = sorted(glob.glob(f'{base_path}/*/evaluation_all.csv'))
+
+models = []
+colors = []
+markers = []
+dfs = []
+for i, csv_path in enumerate(csv_files):
+    dir_name = os.path.basename(os.path.dirname(csv_path))
+    models.append(dir_name)
+    colors.append(color_pool[i % len(color_pool)])
+    markers.append(marker_pool[i % len(marker_pool)])
+    dfs.append(pd.read_csv(csv_path))
 
 output_dir = 'metric_comparison'
 os.makedirs(output_dir, exist_ok=True)
@@ -41,6 +53,19 @@ metric_direction = {
     'Coverage_80%': 'higher'
 }
 
+ANOMALY_THRESHOLD = 1e6
+metrics_cols = ['MAE', 'RMSE', 'wQL_0.1', 'wQL_0.5', 'wQL_0.9', 'wQL_Mean']
+
+exclude_books = set()
+for df in dfs:
+    existing = [c for c in metrics_cols if c in df.columns]
+    bad = ~np.isfinite(df[existing]).all(axis=1) | (df[existing] > ANOMALY_THRESHOLD).any(axis=1)
+    exclude_books |= set(df.loc[bad, 'book_name'])
+dfs = [df[~df['book_name'].isin(exclude_books)].copy() for df in dfs]
+print(f"Excluded {len(exclude_books)} books across all models:")
+for b in sorted(exclude_books):
+    print(f"  - {b}")
+
 def calculate_global_metrics(df):
     results = {}
     total_sales = df['Total_Sales'].sum()
@@ -58,26 +83,13 @@ def calculate_global_metrics(df):
 
     return results
 
-tft_metrics = calculate_global_metrics(tft_df)
-chronos_metrics = calculate_global_metrics(chronos_df)
-chronos_ft_metrics = calculate_global_metrics(chronos_ft_df)
-chronos_bolt_metrics = calculate_global_metrics(chronos_bolt_df)
-chronos_bolt_ft_metrics = calculate_global_metrics(chronos_bolt_ft_df)
-
-tft_means = [tft_metrics[m] for m in raw_metrics]
-chronos_means = [chronos_metrics[m] for m in raw_metrics]
-chronos_ft_means = [chronos_ft_metrics[m] for m in raw_metrics]
-chronos_bolt_means = [chronos_bolt_metrics[m] for m in raw_metrics]
-chronos_bolt_ft_means = [chronos_bolt_ft_metrics[m] for m in raw_metrics]
-
-models = ['TFT', 'Chronos', 'Chronos+FT', 'Chronos-Bolt', 'Chronos-Bolt+FT']
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#9467bd', '#d62728']
-markers = ['o', '^', 's', 'p', 'D']
+all_metrics = [calculate_global_metrics(df) for df in dfs]
+all_means = [[m[metric] for metric in raw_metrics] for m in all_metrics]
 
 for i, metric in enumerate(raw_metrics):
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    values = [tft_means[i], chronos_means[i], chronos_ft_means[i], chronos_bolt_means[i], chronos_bolt_ft_means[i]]
+    values = [means[i] for means in all_means]
     x = np.arange(len(models))
 
     bars = ax.bar(x, values, color=colors, alpha=0.7, width=0.6)
@@ -133,7 +145,7 @@ axes = axes.flatten()
 for i, metric in enumerate(raw_metrics):
     ax = axes[i]
 
-    values = [tft_means[i], chronos_means[i], chronos_ft_means[i], chronos_bolt_means[i], chronos_bolt_ft_means[i]]
+    values = [means[i] for means in all_means]
     x = np.arange(len(models))
 
     bars = ax.bar(x, values, color=colors, alpha=0.7, width=0.6)
@@ -179,19 +191,12 @@ for i in range(len(raw_metrics), len(axes)):
     axes[i].axis('off')
 
 legend_elements = [
-    plt.Line2D([0], [0], marker=markers[0], color='w', markerfacecolor=colors[0],
-               markersize=10, label='TFT', markeredgecolor='black', markeredgewidth=1.5),
-    plt.Line2D([0], [0], marker=markers[1], color='w', markerfacecolor=colors[1],
-               markersize=10, label='Chronos', markeredgecolor='black', markeredgewidth=1.5),
-    plt.Line2D([0], [0], marker=markers[2], color='w', markerfacecolor=colors[2],
-               markersize=10, label='Chronos+FT', markeredgecolor='black', markeredgewidth=1.5),
-    plt.Line2D([0], [0], marker=markers[3], color='w', markerfacecolor=colors[3],
-               markersize=10, label='Chronos-Bolt', markeredgecolor='black', markeredgewidth=1.5),
-    plt.Line2D([0], [0], marker=markers[4], color='w', markerfacecolor=colors[4],
-               markersize=10, label='Chronos-Bolt+FT', markeredgecolor='black', markeredgewidth=1.5)
+    plt.Line2D([0], [0], marker=markers[i], color='w', markerfacecolor=colors[i],
+               markersize=10, label=models[i], markeredgecolor='black', markeredgewidth=1.5)
+    for i in range(len(models))
 ]
-fig.legend(handles=legend_elements, loc='lower right', fontsize=12,
-           frameon=True, edgecolor='black', ncol=5, bbox_to_anchor=(0.95, 0.02))
+fig.legend(handles=legend_elements, loc='lower right', fontsize=10,
+           frameon=True, edgecolor='black', ncol=4, bbox_to_anchor=(0.98, 0.02))
 
 plt.suptitle('Comparison of All Metrics Across Models', fontsize=16, fontweight='bold', y=0.995)
 plt.tight_layout(rect=[0, 0.03, 1, 0.99])

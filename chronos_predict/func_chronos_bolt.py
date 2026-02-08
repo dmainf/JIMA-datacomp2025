@@ -24,15 +24,24 @@ CONFIG = {
     "prediction_length": 64,
     "context_length": 180,
     "batch_size": 16,
-    "use_log_scale": False,
     "output_dir": "chronos_bolt+FT",
-    "lora_output_dir": "ch_bolt_lora_checkpoints",
+    "lora_output_dir": "ch_bolt_dora_checkpoints",
     "learning_rate": 1e-4,
     "epochs": 3
 }
 
+PEFT_CONFIG = LoraConfig(
+    inference_mode=False,
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.1,
+    #target_modules=["q", "v"],
+    target_modules="all-linear",
+    use_dora=True
+)
+
 class ChronosBoltDataset(Dataset):
-    def __init__(self, df, context_length, prediction_length, use_log_scale=False, mode="train"):
+    def __init__(self, df, context_length, prediction_length, mode="train"):
         self.samples = []
         grouped = df.groupby('書名', observed=True)
 
@@ -41,12 +50,7 @@ class ChronosBoltDataset(Dataset):
                 continue
 
             group = group.sort_values('日付')
-            raw_sales = group['POS販売冊数'].values.astype(np.float32)
-
-            if use_log_scale:
-                series_data = np.log1p(raw_sales)
-            else:
-                series_data = raw_sales
+            series_data = group['POS販売冊数'].values.astype(np.float32)
 
             total_len = context_length + prediction_length
 
@@ -111,7 +115,7 @@ def extract_decile_books(df):
     return decile_books
 
 def train_model(df):
-    print("\n=== Starting LoRA Fine-Tuning (Chronos-Bolt SCALED) ===")
+    print("\n=== Starting DoRA Fine-Tuning (Chronos-Bolt SCALED) ===")
 
     if torch.cuda.is_available():
         torch_dtype = torch.bfloat16
@@ -125,21 +129,13 @@ def train_model(df):
     )
     model = pipeline.model
 
-    peft_config = LoraConfig(
-        inference_mode=False,
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.1,
-        target_modules=["q", "k", "v", "o", "wi", "wo"]
-    )
-    model = get_peft_model(model, peft_config)
+    model = get_peft_model(model, PEFT_CONFIG)
     model.print_trainable_parameters()
 
     full_dataset = ChronosBoltDataset(
         df,
         context_length=CONFIG["context_length"],
         prediction_length=CONFIG["prediction_length"],
-        use_log_scale=CONFIG["use_log_scale"],
         mode="train"
     )
 
@@ -177,7 +173,7 @@ def train_model(df):
 
     final_adapter_path = os.path.join(CONFIG["lora_output_dir"], "final_adapter")
     model.save_pretrained(final_adapter_path)
-    print(f"LoRA adapter saved to: {final_adapter_path}")
+    print(f"DoRA adapter saved to: {final_adapter_path}")
     return final_adapter_path
 
 def load_model(adapter_path=None):
@@ -191,7 +187,7 @@ def load_model(adapter_path=None):
     )
 
     if adapter_path and os.path.exists(adapter_path):
-        print(f"Loading LoRA adapter from: {adapter_path}")
+        print(f"Loading DoRA adapter from: {adapter_path}")
         pipeline.model = PeftModel.from_pretrained(pipeline.model, adapter_path)
     else:
         print("Using base model.")
@@ -210,12 +206,7 @@ def preprocess_data(df, decile_books=None, all_predict=True):
             continue
 
         group = group.sort_values('日付')
-        raw_sales = group['POS販売冊数'].values.astype(np.float32)
-
-        if CONFIG["use_log_scale"]:
-            series_data = np.log1p(raw_sales)
-        else:
-            series_data = raw_sales
+        series_data = group['POS販売冊数'].values.astype(np.float32)
 
         total_len = CONFIG["context_length"] + CONFIG["prediction_length"]
         context = series_data[-total_len:-CONFIG["prediction_length"]]
@@ -228,7 +219,7 @@ def preprocess_data(df, decile_books=None, all_predict=True):
             "id": book_name,
             "context": torch.tensor(scaled_context, dtype=torch.float32),
             "target": torch.tensor(target, dtype=torch.float32),
-            "raw_target": raw_sales[-CONFIG["prediction_length"]:],
+            "raw_target": series_data[-CONFIG["prediction_length"]:],
             "scale": scale
         })
     return samples
@@ -265,11 +256,6 @@ def save_results(samples, forecasts, decile_books, all_predict):
         quantile_forecast = forecasts[i].numpy() * scale
         context = sample["context"].numpy() * scale
         target = sample["target"].numpy()
-
-        if CONFIG["use_log_scale"]:
-            quantile_forecast = np.expm1(quantile_forecast)
-            context = np.expm1(context)
-            target = np.expm1(target)
 
         plt.figure(figsize=(10, 6))
         context_idx = np.arange(len(context))
@@ -330,10 +316,6 @@ def evaluate_predictions(samples, forecasts, config, all_predict):
         scale = sample.get("scale", 1.0)
         quantile_forecast = forecasts[i].numpy() * scale
         target = sample["target"].numpy()
-
-        if config["use_log_scale"]:
-            quantile_forecast = np.expm1(quantile_forecast)
-            target = np.expm1(target)
 
         median_idx = quantile_forecast.shape[0] // 2
         q50 = quantile_forecast[median_idx]
