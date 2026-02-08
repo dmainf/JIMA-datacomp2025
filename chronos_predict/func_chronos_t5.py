@@ -24,7 +24,6 @@ CONFIG = {
     "prediction_length": 64,
     "context_length": 180,
     "batch_size": 16,
-    "use_log_scale": False,
     "num_samples": 20,
     "output_dir": "chronos_t5+FT",
     "lora_output_dir": "ch_lora_checkpoints",
@@ -32,8 +31,17 @@ CONFIG = {
     "epochs": 3
 }
 
+PEFT_CONFIG = LoraConfig(
+    task_type=TaskType.SEQ_2_SEQ_LM,
+    inference_mode=False,
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.1,
+    target_modules=["q", "k", "v", "o", "wi", "wo"]
+)
+
 class ChronosDataset(Dataset):
-    def __init__(self, df, tokenizer, context_length, prediction_length, use_log_scale=True, mode="train"):
+    def __init__(self, df, tokenizer, context_length, prediction_length, mode="train"):
         self.samples = []
         self.tokenizer = tokenizer
 
@@ -43,12 +51,7 @@ class ChronosDataset(Dataset):
                 continue
 
             group = group.sort_values('日付')
-            raw_sales = group['POS販売冊数'].values.astype(np.float32)
-
-            if use_log_scale:
-                series_data = np.log1p(raw_sales)
-            else:
-                series_data = raw_sales
+            series_data = group['POS販売冊数'].values.astype(np.float32)
 
             total_len = context_length + prediction_length
 
@@ -126,16 +129,7 @@ def train_model(df):
     tokenizer = pipeline.tokenizer
     model = pipeline.inner_model
 
-    peft_config = LoraConfig(
-        task_type=TaskType.SEQ_2_SEQ_LM,
-        inference_mode=False,
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.1,
-        target_modules=["q", "k", "v", "o", "wi", "wo"]
-    )
-
-    model = get_peft_model(model, peft_config)
+    model = get_peft_model(model, PEFT_CONFIG)
     model.print_trainable_parameters()
 
     full_dataset = ChronosDataset(
@@ -143,7 +137,6 @@ def train_model(df):
         tokenizer,
         context_length=CONFIG["context_length"],
         prediction_length=CONFIG["prediction_length"],
-        use_log_scale=CONFIG["use_log_scale"],
         mode="train"
     )
 
@@ -220,12 +213,7 @@ def preprocess_data(df, decile_books=None, all_predict=True):
             continue
 
         group = group.sort_values('日付')
-        raw_sales = group['POS販売冊数'].values.astype(np.float32)
-
-        if CONFIG["use_log_scale"]:
-            series_data = np.log1p(raw_sales)
-        else:
-            series_data = raw_sales
+        series_data = group['POS販売冊数'].values.astype(np.float32)
 
         total_len = CONFIG["context_length"] + CONFIG["prediction_length"]
         context = series_data[-total_len:-CONFIG["prediction_length"]]
@@ -235,7 +223,6 @@ def preprocess_data(df, decile_books=None, all_predict=True):
             "id": book_name,
             "context": torch.tensor(context, dtype=torch.float32),
             "target": torch.tensor(target, dtype=torch.float32),
-            "raw_target": raw_sales[-CONFIG["prediction_length"]:]
         })
 
     return samples
@@ -271,11 +258,6 @@ def save_results(samples, forecasts, decile_books, all_predict):
         forecast = forecasts[i].numpy()
         context = sample["context"].numpy()
         target = sample["target"].numpy()
-
-        if CONFIG["use_log_scale"]:
-            forecast = np.expm1(forecast)
-            context = np.expm1(context)
-            target = np.expm1(target)
 
         plt.figure(figsize=(10, 6))
 
@@ -346,10 +328,6 @@ def evaluate_predictions(samples, forecasts, config, all_predict):
 
         forecast_samples = forecasts[i].numpy()
         target = sample["target"].numpy()
-
-        if config["use_log_scale"]:
-            forecast_samples = np.expm1(forecast_samples)
-            target = np.expm1(target)
 
         q10 = np.quantile(forecast_samples, 0.1, axis=0)
         q50 = np.quantile(forecast_samples, 0.5, axis=0)
