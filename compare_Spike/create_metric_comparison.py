@@ -31,7 +31,14 @@ for i, csv_path in enumerate(csv_files):
     models.append(dir_name)
     colors.append(get_color(dir_name))
     markers.append(marker_pool[i % len(marker_pool)])
-    dfs.append(pd.read_csv(csv_path))
+    df = pd.read_csv(csv_path)
+    df = df.rename(columns={
+        'Spike_MAE': 'MAE_spike',
+        'Spike_RMSE': 'RMSE_spike',
+        'NonSpike_MAE': 'MAE_non_spike',
+        'NonSpike_RMSE': 'RMSE_non_spike',
+    })
+    dfs.append(df)
 
 output_dir = 'metric_comparison'
 os.makedirs(output_dir, exist_ok=True)
